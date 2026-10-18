@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Agent 知识考试系统</title>
+<style>
+/* ========== 基础与配色：中性灰蓝，无渐变、无装饰性圆角 ========== */
+:root{
+  --ink:#16202c; --text:#2b3746; --muted:#66748a; --faint:#8d99ab;
+  --line:#d3dae3; --line-soft:#e6eaf0; --bg:#eceff4; --panel:#ffffff;
+  --brand:#1a4d8f; --brand-dark:#123a6e; --brand-soft:#eaf0f8;
+  --ok:#15693a; --ok-bg:#eaf4ee; --ok-line:#bcdcc8;
+  --bad:#9e2b25; --bad-bg:#fbeeed; --bad-line:#e8c4c1;
+  --warn:#8a5b06; --warn-bg:#fbf3e2;
+  --mono:"Cascadia Mono",Consolas,"SFMono-Regular",Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--text);
+  font:14px/1.65 "Microsoft YaHei","PingFang SC","Hiragino Sans GB","Segoe UI",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font-family:inherit;touch-action:manipulation}
+h1,h2,h3,h4{margin:0;color:var(--ink);font-weight:600}
+.wrap{max-width:1560px;margin:0 auto;padding:0 24px}
+.hide{display:none !important}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+@media (hover:none){
+  .opt:hover{border-color:var(--line);background:#fff}
+  .btn:hover{background:#fff;border-color:var(--line)}
+  .btn-primary:hover{background:var(--brand);border-color:var(--brand)}
+  .cell:hover{border-color:var(--line)}
+  .seg button:hover:not(.on){background:#fff}
+}
+
+/* ========== 顶栏 ========== */
+.topbar{
+  position:sticky;top:0;z-index:40;background:#fff;border-bottom:1px solid var(--line);
+  box-shadow:0 1px 0 rgba(22,32,44,.03);
+}
+.topbar-in{display:flex;align-items:center;gap:22px;height:60px}
+.brand{display:flex;align-items:baseline;gap:10px;flex-shrink:0}
+.brand b{font-size:15.5px;color:var(--ink);letter-spacing:.3px}
+.brand span{font-size:12px;color:var(--faint)}
+.tb-progress{flex:1;min-width:180px}
+.tb-progress .line{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:5px}
+.tb-progress .line b{color:var(--ink);font-weight:600}
+.track{height:7px;background:#e2e7ee;border:1px solid var(--line);position:relative;overflow:hidden}
+.track i{display:block;height:100%;width:0;background:var(--brand);transition:width .25s ease}
+.tb-metrics{display:flex;gap:0;flex-shrink:0;border-left:1px solid var(--line-soft)}
+.metric{padding:3px 18px;border-right:1px solid var(--line-soft);text-align:right;min-width:92px}
+.metric small{display:block;font-size:11px;color:var(--faint);letter-spacing:.5px}
+.metric b{font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+.metric b em{font-size:11.5px;font-style:normal;color:var(--muted);font-weight:400}
+.tb-act{flex-shrink:0;padding-left:6px}
+
+/* ========== 按钮 ========== */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  height:34px;padding:0 16px;border:1px solid var(--line);background:#fff;color:var(--text);
+  border-radius:3px;font-size:13.5px;cursor:pointer;transition:background .15s,border-color .15s;
+}
+.btn:hover{background:#f6f8fb;border-color:#c2cbd7}
+.btn:active{background:#eef2f7}
+.btn-primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn-primary:hover{background:var(--brand-dark);border-color:var(--brand-dark)}
+.btn-danger{border-color:#d9b7b4;color:var(--bad);background:#fff}
+.btn-danger:hover{background:#fdf3f2}
+.btn-lg{height:40px;padding:0 26px;font-size:14.5px}
+.btn:disabled{opacity:.45;cursor:not-allowed;background:#f4f6f9}
+
+/* ========== 通用面板 ========== */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:3px}
+.panel-h{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:11px 16px;border-bottom:1px solid var(--line);background:#fafbfd;
+}
+.panel-h h3{font-size:13.5px;letter-spacing:.3px}
+.panel-h .sub{font-size:12px;color:var(--muted)}
+.panel-b{padding:16px}
+.sec-title{
+  font-size:12px;letter-spacing:1px;color:var(--faint);font-weight:600;
+  padding:0 0 8px;border-bottom:1px solid var(--line-soft);margin-bottom:12px;
+}
+
+/* ========== 考前须知 ========== */
+.start{padding:28px 0 60px}
+.start-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;align-items:start}
+.notice-hd{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:22px 24px;border-bottom:1px solid var(--line)}
+.notice-hd h1{font-size:22px;letter-spacing:.5px}
+.notice-hd p{margin:6px 0 0;font-size:13px;color:var(--muted)}
+.notice-hd .code{font-family:var(--mono);font-size:12px;color:var(--faint);text-align:right;line-height:1.9}
+table.tb{width:100%;border-collapse:collapse;font-size:13.5px}
+table.tb th,table.tb td{border:1px solid var(--line-soft);padding:9px 12px;text-align:left;vertical-align:top}
+table.tb th{background:#f7f9fc;color:var(--ink);font-weight:600;white-space:nowrap}
+table.tb tr:nth-child(even) td{background:#fcfdfe}
+table.tb td.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.kv-note{margin-top:14px;padding:12px 14px;background:#fbfcfd;border-left:3px solid var(--brand);font-size:13px;color:var(--text)}
+.kv-note b{color:var(--ink)}
+.rule-list{margin:0;padding-left:18px;font-size:13.5px;color:var(--text)}
+.rule-list li{margin:7px 0}
+.rule-list code{font-family:var(--mono);font-size:12.5px;background:#f1f3f7;border:1px solid var(--line-soft);border-radius:2px;padding:0 4px}
+.kbd{display:inline-block;min-width:19px;text-align:center;font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-bottom-width:2px;border-radius:3px;padding:0 4px;background:#fff;color:var(--ink)}
+.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:3px;background:#fff;overflow:hidden}
+.stat-strip div{padding:12px 14px;border-right:1px solid var(--line-soft)}
+.stat-strip div:last-child{border-right:0}
+.stat-strip small{display:block;font-size:11.5px;color:var(--faint);letter-spacing:.5px}
+.stat-strip b{font-size:20px;color:var(--ink);font-variant-numeric:tabular-nums}
+.stat-strip b em{font-size:12px;font-style:normal;color:var(--muted);font-weight:400}
+
+/* ========== 考试页布局 ========== */
+.exam{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;padding:20px 0 80px;align-items:start}
+/* 网格项必须允许收缩，否则内部宽表格会顶穿列宽造成横向溢出 */
+.start-grid>*,.exam>*,.cols2>*{min-width:0}
+/* 宽屏左下角的本卷进度面板：只在超大屏出现 */
+.side{display:none}
+.side-sum{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);margin-bottom:12px}
+.side-sum div{background:#fff;padding:9px 10px}
+.side-sum small{display:block;font-size:11px;color:var(--faint);letter-spacing:.4px}
+.side-sum b{font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums}
+.side-sum b em{font-size:11px;font-style:normal;color:var(--muted);font-weight:400}
+.side-list{display:flex;flex-direction:column;gap:9px}
+.side-name{font-size:12px;color:var(--text);line-height:1.45;margin-bottom:3px;display:flex;justify-content:space-between;gap:6px}
+.side-row .side-bar{height:5px;background:#e7ebf1;border:1px solid var(--line-soft);margin-bottom:2px}
+.side-row .side-bar i{display:block;height:100%;width:0;background:var(--brand);transition:width .25s ease}
+.side-row .side-bar i.mid{background:#8a5b06}
+.side-row .side-bar i.low{background:#b4571f}
+.side-num{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums;text-align:right}
+.side-keys{font-size:12.5px;color:var(--muted);line-height:2}
+.side-keys .kbd{margin-right:2px}
+.qcard{background:#fff;border:1px solid var(--line);border-radius:3px}
+.qhead{display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid var(--line-soft);background:#fafbfd;flex-wrap:wrap}
+.qno{font-family:var(--mono);font-size:15px;color:var(--ink);font-weight:600}
+.qno em{font-style:normal;color:var(--faint);font-size:12.5px;font-weight:400}
+.tag{display:inline-block;padding:1px 7px;font-size:11.5px;border-radius:2px;border:1px solid;line-height:1.7;white-space:nowrap}
+.tag-single{color:#1a4d8f;border-color:#c3d3e8;background:#eef3fa}
+.tag-multiple{color:#7a4a06;border-color:#e3cfa9;background:#fbf4e6}
+.tag-judge{color:#1c5d51;border-color:#bcd9d2;background:#ecf6f3}
+.tag-score{color:var(--muted);border-color:var(--line);background:#f7f9fc}
+.tag-mod{color:var(--muted);border-color:var(--line-soft);background:#fafbfd}
+.qhead .spacer{flex:1}
+.qbody{padding:22px 24px 8px}
+.stem{font-size:16px;line-height:1.85;color:var(--ink);margin:0 0 18px;white-space:pre-wrap}
+.stem .fill{display:inline-block;min-width:52px;border-bottom:1px solid var(--ink);height:1em;vertical-align:-2px;margin:0 4px}
+
+/* 选项 */
+.opts{display:flex;flex-direction:column;gap:9px;margin-bottom:14px}
+.opt{
+  display:flex;align-items:flex-start;gap:12px;width:100%;text-align:left;
+  padding:12px 14px;border:1px solid var(--line);background:#fff;border-radius:3px;
+  cursor:pointer;font-size:14.5px;line-height:1.7;color:var(--text);transition:border-color .12s,background .12s;
+}
+.opt:hover{border-color:#b6c2d2;background:#fafcff}
+.opt-key{
+  flex-shrink:0;width:24px;height:24px;border:1px solid var(--line);border-radius:2px;background:#f7f9fc;
+  display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;color:var(--ink);font-weight:600;
+}
+.opt-key.txt{width:auto;min-width:42px;padding:0 8px;font-family:inherit;font-size:12.5px;letter-spacing:.5px}
+.opt-text{flex:1}
+.opt-mark{flex-shrink:0;font-size:12px;color:var(--faint);align-self:center;white-space:nowrap}
+.opt.picked{border-color:var(--brand);background:var(--brand-soft)}
+.opt.picked .opt-key{border-color:var(--brand);background:var(--brand);color:#fff}
+.opt.right{border-color:var(--ok-line);background:var(--ok-bg)}
+.opt.right .opt-key{border-color:var(--ok);background:var(--ok);color:#fff}
+.opt.wrong{border-color:var(--bad-line);background:var(--bad-bg)}
+.opt.wrong .opt-key{border-color:var(--bad);background:var(--bad);color:#fff}
+.opt.right .opt-mark{color:var(--ok)}
+.opt.wrong .opt-mark{color:var(--bad)}
+.opts.locked .opt{cursor:default}
+.opts.locked .opt:hover{border-color:var(--line);background:#fff}
+.opts.locked .opt.right:hover{border-color:var(--ok-line);background:var(--ok-bg)}
+.opts.locked .opt.wrong:hover{border-color:var(--bad-line);background:var(--bad-bg)}
+.opts.locked .opt.picked:hover{border-color:var(--brand);background:var(--brand-soft)}
+
+/* 反馈 */
+.fb{margin:0 24px 20px;border:1px solid;border-radius:3px;overflow:hidden}
+.fb-ok{border-color:var(--ok-line);background:var(--ok-bg)}
+.fb-bad{border-color:var(--bad-line);background:var(--bad-bg)}
+.fb-info{border-color:#c9d6e8;background:#f2f6fb}
+.fb-hd{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid rgba(0,0,0,.06)}
+.fb-ok .fb-hd{background:#e2efe7}
+.fb-bad .fb-hd{background:#f7e3e1}
+.fb-info .fb-hd{background:#e6eef9}
+.fb-hd b{font-size:14px;color:var(--ink)}
+.fb-ok .fb-hd b{color:var(--ok)}
+.fb-bad .fb-hd b{color:var(--bad)}
+.fb-hd .pts{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+.fb-bd{padding:12px 14px;font-size:13.5px;background:#fff}
+.fb-bd .row{display:flex;gap:10px;padding:3px 0}
+.fb-bd .row span:first-child{color:var(--faint);flex-shrink:0;width:66px}
+.ans-ok{color:var(--ok);font-weight:600;font-family:var(--mono)}
+.ans-bad{color:var(--bad);font-weight:600;font-family:var(--mono)}
+.exp{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);line-height:1.85;color:var(--text)}
+.exp .lb{display:inline-block;font-size:11.5px;color:var(--brand);border:1px solid #c3d3e8;background:#eef3fa;border-radius:2px;padding:0 6px;margin-right:8px;vertical-align:1px}
+
+/* 题干底部操作条 */
+.qfoot{display:flex;align-items:center;gap:10px;padding:12px 20px 16px;border-top:1px solid var(--line-soft);flex-wrap:wrap}
+.qfoot .spacer{flex:1}
+.hint{font-size:12.5px;color:var(--muted)}
+
+/* ========== 右侧答题卡 ========== */
+.rail{position:sticky;top:80px;display:flex;flex-direction:column;gap:12px}
+.rail .panel-b{padding:12px}
+.rail-close{display:none;width:auto;height:26px;padding:0 10px;align-items:center;justify-content:center;border:1px solid var(--line);background:#fff;border-radius:3px;color:var(--muted);cursor:pointer;font-size:12.5px;white-space:nowrap}
+#railMask{display:none}
+.mobar{
+  display:none;position:fixed;left:0;right:0;bottom:0;z-index:70;background:#fff;
+  border-top:1px solid var(--line);gap:8px;
+  padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+}
+.mobar .btn{flex:1;height:42px;font-size:14.5px}
+.mobar .btn-mid{flex:0 0 auto;padding:0 16px}
+.rail-h{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line);background:#fafbfd}
+.rail-h h3{font-size:13px}
+.rail-h .sub{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.rail select{width:100%;height:30px;border:1px solid var(--line);border-radius:3px;background:#fff;color:var(--text);font-size:12.5px;padding:0 6px}
+.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin:11px 0 10px}
+.cell{
+  aspect-ratio:1/1;border:1px solid var(--line);background:#fff;border-radius:2px;
+  font-family:var(--mono);font-size:10.5px;color:var(--muted);cursor:pointer;padding:0;
+  display:flex;align-items:center;justify-content:center;transition:background .1s;
+}
+.cell:hover{border-color:#9fb0c6}
+.cell.right{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok);font-weight:600}
+.cell.wrong{background:var(--bad-bg);border-color:var(--bad-line);color:var(--bad);font-weight:600}
+.cell.cur{outline:2px solid var(--brand);outline-offset:-1px;color:var(--brand);font-weight:600}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--line-soft);padding-top:9px}
+.legend i{display:inline-block;width:11px;height:11px;border:1px solid var(--line);border-radius:2px;margin-right:5px;vertical-align:-1px;background:#fff}
+.legend .r i{background:var(--ok-bg);border-color:var(--ok-line)}
+.legend .w i{background:var(--bad-bg);border-color:var(--bad-line)}
+.legend .c i{outline:2px solid var(--brand);outline-offset:-1px}
+.scorebox{padding:14px 12px;text-align:center;border-top:1px solid var(--line-soft)}
+.scorebox small{display:block;font-size:11.5px;color:var(--faint);letter-spacing:.5px}
+.scorebox b{font-size:26px;color:var(--ink);font-variant-numeric:tabular-nums}
+.scorebox b em{font-size:12px;font-style:normal;color:var(--muted);font-weight:400}
+
+/* ========== 交卷确认 ========== */
+.mask{position:fixed;inset:0;background:rgba(20,28,38,.42);z-index:80;display:flex;align-items:center;justify-content:center;padding:20px}
+.dialog{width:420px;max-width:100%;background:#fff;border:1px solid #c8d1dc;border-radius:3px;box-shadow:0 10px 40px rgba(16,24,38,.22)}
+.dialog-h{padding:13px 18px;border-bottom:1px solid var(--line);background:#f7f9fc;font-size:14px;font-weight:600;color:var(--ink)}
+.dialog-b{padding:18px;font-size:13.5px;line-height:1.9}
+.dialog-b .big{font-family:var(--mono);color:var(--ink);font-weight:600}
+.dialog-f{display:flex;justify-content:flex-end;gap:10px;padding:13px 18px;border-top:1px solid var(--line);background:#fafbfd}
+
+/* ========== 成绩报告 ========== */
+.report{padding:22px 0 70px}
+.rep-hd{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:20px 24px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.rep-hd h1{font-size:20px;letter-spacing:.4px}
+.rep-hd .meta{font-size:12.5px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
+.score-hero{display:flex;align-items:baseline;gap:12px}
+.score-hero b{font-size:44px;line-height:1;color:var(--brand);font-variant-numeric:tabular-nums;letter-spacing:-1px}
+.score-hero span{font-size:13px;color:var(--muted)}
+.tiles{display:grid;grid-template-columns:repeat(6,1fr);border:1px solid var(--line);border-radius:3px;background:#fff;overflow:hidden;margin:18px 0}
+.tiles div{padding:13px 15px;border-right:1px solid var(--line-soft)}
+.tiles div:last-child{border-right:0}
+.tiles small{display:block;font-size:11.5px;color:var(--faint);letter-spacing:.5px;margin-bottom:2px}
+.tiles b{font-size:19px;color:var(--ink);font-variant-numeric:tabular-nums}
+.tiles b em{font-size:12px;font-style:normal;color:var(--muted);font-weight:400}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.bar-out{height:6px;background:#e7ebf1;border:1px solid var(--line-soft);position:relative;min-width:70px}
+.bar-out i{display:block;height:100%;background:var(--brand)}
+.bar-out i.low{background:#b4571f}
+.bar-out i.mid{background:#8a5b06}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line);background:#fafbfd}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.seg button{border:0;border-right:1px solid var(--line);background:#fff;color:var(--text);font-size:12.5px;height:30px;padding:0 13px;cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--brand);color:#fff}
+.seg button:hover:not(.on){background:#f4f7fb}
+.rev{border-bottom:1px solid var(--line-soft);padding:16px 20px}
+.rev:last-child{border-bottom:0}
+.rev-hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.rev-no{font-family:var(--mono);font-size:13px;color:var(--faint)}
+.verdict{font-size:11.5px;padding:1px 8px;border-radius:2px;border:1px solid}
+.verdict.ok{color:var(--ok);border-color:var(--ok-line);background:var(--ok-bg)}
+.verdict.bad{color:var(--bad);border-color:var(--bad-line);background:var(--bad-bg)}
+.verdict.skip{color:var(--warn);border-color:#e3cfa9;background:var(--warn-bg)}
+.rev-stem{font-size:14.5px;line-height:1.8;color:var(--ink);margin:0 0 10px}
+.rev-opts{display:grid;gap:5px;margin-bottom:10px}
+.rev-opt{display:flex;gap:10px;font-size:13.5px;line-height:1.7;padding:6px 10px;border:1px solid var(--line-soft);border-radius:2px;background:#fcfdfe}
+.rev-opt .k{font-family:var(--mono);font-size:12.5px;color:var(--faint);flex-shrink:0;width:16px}
+.rev-opt .k.txt{width:auto;min-width:38px;font-family:inherit;font-size:12px;letter-spacing:.5px}
+.rev-opt.right{border-color:var(--ok-line);background:var(--ok-bg)}
+.rev-opt.right .k{color:var(--ok);font-weight:600}
+.rev-opt.wrong{border-color:var(--bad-line);background:var(--bad-bg)}
+.rev-opt.wrong .k{color:var(--bad);font-weight:600}
+.rev-opt .mk{font-size:11.5px;color:var(--faint);margin-left:auto;flex-shrink:0;white-space:nowrap}
+.rev-opt.right .mk{color:var(--ok)}
+.rev-opt.wrong .mk{color:var(--bad)}
+.rev-exp{font-size:13.5px;line-height:1.85;color:var(--text);background:#fbfcfd;border-left:3px solid var(--line);padding:9px 12px}
+.rev-exp .lb{color:var(--brand);font-weight:600;margin-right:6px}
+.empty{padding:40px;text-align:center;color:var(--faint);font-size:13.5px}
+.foot-note{padding:14px 20px;font-size:12px;color:var(--faint);border-top:1px solid var(--line-soft);background:#fafbfd}
+
+/* ========== 响应式：大屏 / 笔记本 / 平板 / 手机 ========== */
+@media (min-width:1620px){
+  .wrap{max-width:1620px}
+  .exam{grid-template-columns:minmax(0,1fr) 368px;gap:24px}
+  .grid{grid-template-columns:repeat(12,1fr)}
+  .start-grid{grid-template-columns:minmax(0,1fr) 420px}
+}
+@media (min-width:1860px){
+  .wrap{max-width:1800px;padding:0 32px}
+  .exam{grid-template-columns:250px minmax(0,1fr) 384px}
+  .side{display:flex;flex-direction:column;gap:14px;position:sticky;top:80px}
+}
+@media (min-width:1720px){
+  #revList{columns:2;column-gap:30px}
+  .rev{break-inside:avoid-column}
+}
+@media (max-width:1080px){
+  .exam{grid-template-columns:1fr}
+  .rail{position:static}
+  .start-grid{grid-template-columns:1fr}
+  .cols2{grid-template-columns:1fr}
+  .tiles{grid-template-columns:repeat(3,1fr)}
+  .stat-strip{grid-template-columns:repeat(2,1fr)}
+  .metric{padding:3px 12px;min-width:74px}
+  .tb-metrics .metric:nth-child(3){display:none}
+}
+@media (max-width:900px){
+  .wrap{padding:0 14px}
+
+  /* 顶栏：品牌与交卷一行，进度与指标各占一行 */
+  .topbar-in{height:auto;padding:8px 0;gap:8px;flex-wrap:wrap}
+  .brand{order:1}
+  .brand b{font-size:14.5px}
+  .brand span{display:none}
+  .tb-act{order:2;margin-left:auto}
+  .tb-act .btn{height:30px;padding:0 13px;font-size:13px}
+  .tb-progress{order:3;flex-basis:100%;min-width:0}
+  .tb-progress .line{font-size:11.5px;margin-bottom:4px}
+  .tb-metrics{order:4;flex-basis:100%;border-left:0;border-top:1px solid var(--line-soft);padding-top:7px;display:flex}
+  .metric{padding:0 10px;min-width:0;text-align:left;flex:1}
+  .metric:first-child{padding-left:0}
+  .metric b{font-size:15px}
+  .metric small{font-size:10.5px}
+  .tb-metrics .metric:nth-child(2){display:block}
+  .tb-metrics .metric:nth-child(3){display:block}
+
+  /* 题目区 */
+  .exam{grid-template-columns:1fr;gap:0;padding:12px 0 84px}
+  .qhead{padding:10px 14px;gap:8px}
+  .qno{font-size:14px}
+  .qbody{padding:16px 14px 6px}
+  .stem{font-size:15.5px;line-height:1.8;margin-bottom:14px}
+  .opts{gap:8px;margin-bottom:12px}
+  .opt{padding:13px 12px;font-size:15px;gap:10px;min-height:46px}
+  .opt-key{width:22px;height:22px;font-size:12.5px}
+  .opt-key.txt{min-width:40px;padding:0 7px;font-size:12px}
+  .opt-mark{font-size:11px}
+  .fb{margin:0 14px 14px}
+  .fb-bd{font-size:13px}
+  .fb-bd .row span:first-child{width:58px}
+  .qfoot{padding:10px 14px 12px;gap:8px}
+  .qfoot .btn:not(.btn-primary){display:none}
+  .qfoot .btn-primary{flex:1;height:42px;font-size:15px}
+  .qfoot.foot-mute{display:none}          /* 手机上无操作项时整条收起 */
+  .qfoot #btnNextAfter{display:none}      /* 翻页交给底部操作条 */
+
+  /* 答题卡：底部抽屉 */
+  .rail{
+    position:fixed;left:0;right:0;bottom:0;top:auto;z-index:90;display:none;
+    max-height:84vh;overflow:auto;background:#fff;border-top:1px solid var(--line);
+    border-radius:10px 10px 0 0;box-shadow:0 -14px 40px rgba(16,24,38,.22);
+    padding:0 14px calc(14px + env(safe-area-inset-bottom));
+  }
+  body.rail-open .rail{display:flex}
+  body.rail-open{overflow:hidden}
+  .rail .panel{border:0;border-radius:0}
+  .rail .panel-b{padding:0}
+  .rail-h{padding:12px 0;position:sticky;top:0;background:#fff;z-index:2}
+  .rail-close{display:inline-flex}
+  .grid{grid-template-columns:repeat(12,1fr);gap:4px;margin:10px 0}
+  .cell{font-size:10px}
+  .rail .scorebox{display:none}
+  #railMask{position:fixed;inset:0;background:rgba(20,28,38,.38);z-index:88}
+  body.rail-open #railMask{display:block}
+  .mobar{display:flex}
+
+  /* 表格横向滚动 */
+  .tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tscroll>table.tb{min-width:0}
+  .tscroll.w560>table.tb{min-width:560px}
+
+  /* 考前须知：单列重排，把「开始考试」提到说明之后，省去长距离滚动 */
+  .start{padding:14px 0 40px}
+  .start-grid{display:flex;flex-direction:column;gap:14px}
+  .start-grid>div:first-child{order:1}
+  .start-grid>div:last-child{display:contents}
+  .start-grid>div:last-child>*:nth-child(1){order:3}
+  .start-grid>div:last-child>*:nth-child(2){order:4}
+  .start-grid>div:last-child>*:nth-child(3){order:2;margin:0}
+  .start-grid>div:last-child>*:nth-child(4){order:5}
+  .start-grid>div:last-child>.panel{margin-bottom:0 !important}
+  .notice-hd{padding:16px 14px;flex-direction:column;align-items:flex-start;gap:10px}
+  .notice-hd h1{font-size:19px}
+  .notice-hd .code{text-align:left}
+  .panel-b{padding:14px}
+  table.tb{font-size:13px}
+  table.tb th,table.tb td{padding:8px 10px}
+  .rule-list{font-size:13px}
+  .kv-note{font-size:12.5px}
+
+  /* 成绩报告 */
+  .report{padding:14px 0 50px}
+  .rep-hd{padding:16px 14px;flex-direction:column;align-items:flex-start;gap:10px}
+  .score-hero b{font-size:38px}
+  .tiles{grid-template-columns:repeat(2,1fr)}
+  .tiles div{padding:10px 12px}
+  .tiles b{font-size:17px}
+  .toolbar{padding:10px 14px;gap:8px}
+  .seg{flex:1 0 100%}
+  .seg button{flex:1;padding:0 4px}
+  #revModule{flex:1}
+  .rev{padding:14px}
+  .rev-stem{font-size:14.5px}
+  .rev-opt{font-size:13.5px}
+  .rev-exp{font-size:13px}
+  .tk-hide{display:none}
+}
+@media (max-width:420px){
+  .metric b{font-size:14px}
+  .grid{grid-template-columns:repeat(8,1fr)}
+}
+@media print{
+  body{background:#fff}
+  .topbar,.toolbar,.rail,.mobar,.no-print{display:none !important}
+  #revList{columns:1 !important}
+  .panel,.qcard,.tiles{border-color:#bbb}
+  .rev{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= 顶栏（考试中显示） ================= -->
+<header class="topbar hide" id="topbar">
+  <div class="wrap">
+    <div class="topbar-in">
+      <div class="brand">
+        <b>AI Agent 知识考试-肖克勤</b>
+        <span id="brandMeta">200 题 / 满分 100</span>
+      </div>
+      <div class="tb-progress">
+        <div class="line">
+          <span>答题进度 <b id="pctText">0%</b></span>
+          <span>第 <b id="curNo">1</b> / <span id="totNo">200</span> 题 · 已答 <b id="ansNo">0</b> 题</span>
+        </div>
+        <div class="track"><i id="bar"></i></div>
+      </div>
+      <div class="tb-metrics">
+        <div class="metric"><small>当前得分</small><b id="mScore">0<em>/100</em></b></div>
+        <div class="metric"><small>答对 / 答错</small><b id="mRight">0<em> / 0</em></b></div>
+        <div class="metric"><small>用时</small><b id="mTime">00:00</b></div>
+      </div>
+      <div class="tb-act">
+        <button class="btn btn-primary" id="btnSubmitTop">交卷</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ================= 考前须知 ================= -->
+  <section id="screenStart" class="wrap start">
+    <div class="start-grid">
+      <div class="panel">
+        <div class="notice-hd">
+          <div>
+            <h1>AI Agent 知识考试-肖克勤</h1>
+            <p>覆盖《AI Agent》教材第 1–10 章核心知识，并设 Vibe Coding 专题模块。客观题在线作答，提交后即时判分。</p>
+          </div>
+          <div class="code">
+            试卷编号 EX-AGENT-200<br>
+            组卷方式 全题库抽卷<br>
+            考试形式 开卷 · 不限时
+          </div>
+        </div>
+        <div class="panel-b">
+          <div class="sec-title">考试说明</div>
+          <div class="tscroll">
+          <table class="tb">
+            <tr><th style="width:118px">题量</th><td id="cfgCount">200 题</td></tr>
+            <tr><th>题型</th><td id="cfgTypes">—</td></tr>
+            <tr><th>分值</th><td>每题 0.5 分，满分 100 分；多选题须<b>全部选对</b>才计分，无部分分</td></tr>
+            <tr><th>知识范围</th><td id="cfgModules">—</td></tr>
+            <tr><th>判分方式</th><td>答题后立即判分：答错即时标出正确答案并给出解析；答对自动进入下一题</td></tr>
+            <tr><th>顺序</th><td>每次考试题目顺序与选项顺序均随机打乱</td></tr>
+            <tr><th>时限</th><td>不设时限，系统记录实际用时；可随时交卷，未作答题目按未得分计</td></tr>
+          </table>
+          </div>
+
+          <div class="kv-note">
+            <b>操作提示：</b>单选题与判断题点击选项即判分，判分后不可修改；多选题需先勾选，再点「提交作答」。
+            答题卡可按模块筛选并跳转任意题目。
+          </div>
+
+          <div class="sec-title tk-hide" style="margin-top:20px">键盘快捷键</div>
+          <ul class="rule-list tk-hide">
+            <li><span class="kbd">A</span> <span class="kbd">B</span> <span class="kbd">C</span> <span class="kbd">D</span>（或 <span class="kbd">1</span>–<span class="kbd">4</span>）选择选项</li>
+            <li><span class="kbd">Enter</span> 多选题提交作答 / 判分后进入下一题</li>
+            <li><span class="kbd">←</span> <span class="kbd">→</span> 上一题 / 下一题</li>
+          </ul>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel" style="margin-bottom:18px">
+          <div class="panel-h"><h3>试卷结构</h3><span class="sub">按题型</span></div>
+          <div class="panel-b" style="padding:0">
+            <div class="tscroll"><table class="tb" id="tblTypes"></table></div>
+          </div>
+        </div>
+        <div class="panel" style="margin-bottom:18px">
+          <div class="panel-h"><h3>知识模块</h3><span class="sub">按模块</span></div>
+          <div class="panel-b" style="padding:0">
+            <div class="tscroll"><table class="tb" id="tblModules"></table></div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-lg" id="btnStart" style="width:100%">开始考试</button>
+        <div class="foot-note" style="border:1px solid var(--line);border-top:0;border-radius:0 0 3px 3px;margin-top:-1px">
+          交卷后公布每题正确答案与个人作答，并统计总分、正确率、各题型得分、各模块正确率与用时。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 考试中 ================= -->
+  <section id="screenExam" class="wrap exam hide">
+    <!-- 大屏专属：本卷进度 -->
+    <aside class="side">
+      <div class="panel">
+        <div class="panel-h"><h3>本卷进度</h3><span class="sub" id="sidePct">0%</span></div>
+        <div class="panel-b">
+          <div class="side-sum">
+            <div><small>已答</small><b id="sideDone">0<em> / 200</em></b></div>
+            <div><small>当前得分</small><b id="sideScore">0<em> / 100</em></b></div>
+            <div><small>答对</small><b id="sideRight">0<em> 题</em></b></div>
+            <div><small>答错</small><b id="sideWrong">0<em> 题</em></b></div>
+          </div>
+          <div class="side-list" id="sideList"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h3>快捷键</h3></div>
+        <div class="panel-b side-keys">
+          <span class="kbd">A</span><span class="kbd">B</span><span class="kbd">C</span><span class="kbd">D</span> 选择选项<br>
+          <span class="kbd">Enter</span> 提交作答 / 下一题<br>
+          <span class="kbd">←</span><span class="kbd">→</span> 上一题 / 下一题
+        </div>
+      </div>
+    </aside>
+
+    <div>
+      <div class="qcard">
+        <div class="qhead">
+          <span class="qno" id="qNoText">1 <em>/ 200</em></span>
+          <span class="tag tag-single" id="qTypeTag">单选题</span>
+          <span class="tag tag-score">0.5 分</span>
+          <span class="tag tag-mod" id="qModTag">模块</span>
+          <span class="spacer"></span>
+          <span class="hint" id="qHint">点击选项后立即判分</span>
+        </div>
+        <div class="qbody">
+          <p class="stem" id="qStem"></p>
+          <div class="opts" id="qOpts"></div>
+        </div>
+        <div id="qFb"></div>
+        <div class="qfoot">
+          <button class="btn" id="btnPrev">上一题</button>
+          <button class="btn" id="btnNext">下一题</button>
+          <button class="btn" id="btnSkip">跳过本题</button>
+          <span class="spacer"></span>
+          <button class="btn btn-primary hide" id="btnCommit">提交作答</button>
+          <button class="btn btn-primary hide" id="btnNextAfter">下一题</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="rail" id="rail">
+      <div class="panel">
+        <div class="rail-h">
+          <h3>答题卡</h3>
+          <span class="sub" id="railCount">已答 0 / 200</span>
+          <button class="rail-close" id="railClose" title="收起答题卡">收起</button>
+        </div>
+        <div class="panel-b">
+          <select id="railModule"></select>
+          <div class="grid" id="railGrid"></div>
+          <div class="legend">
+            <span><i></i>未作答</span>
+            <span class="r"><i></i>回答正确</span>
+            <span class="w"><i></i>回答错误</span>
+            <span class="c"><i></i>当前题目</span>
+          </div>
+        </div>
+        <div class="scorebox">
+          <small>当前得分</small>
+          <b id="railScore">0<em> / 100</em></b>
+        </div>
+      </div>
+      <button class="btn btn-danger" id="btnSubmitRail" style="height:38px">交卷并查看成绩</button>
+    </aside>
+
+    <!-- 手机端底部操作条 -->
+    <div class="mobar">
+      <button class="btn" id="mPrev">上一题</button>
+      <button class="btn btn-mid" id="mRail">答题卡</button>
+      <button class="btn btn-primary" id="mNext">下一题</button>
+    </div>
+  </section>
+
+  <div id="railMask"></div>
+
+  <!-- ================= 成绩报告 ================= -->
+  <section id="screenReport" class="wrap report hide">
+    <div class="panel" style="margin-bottom:18px">
+      <div class="rep-hd">
+        <div>
+          <h1>考试成绩报告</h1>
+          <div class="meta" id="repMeta">—</div>
+        </div>
+        <div class="score-hero">
+          <b id="repScore">0</b><span>分 / 满分 100</span>
+        </div>
+      </div>
+      <div class="panel-b" style="padding-top:0">
+        <div class="tiles" id="repTiles"></div>
+        <div class="cols2">
+          <div class="panel" style="margin-bottom:0">
+            <div class="panel-h"><h3>各题型得分</h3><span class="sub">多选题全部选对才计分</span></div>
+            <div class="panel-b" style="padding:0"><div class="tscroll w560"><table class="tb" id="repTblTypes"></table></div></div>
+          </div>
+          <div class="panel" style="margin-bottom:0">
+            <div class="panel-h"><h3>各知识模块正确率</h3><span class="sub">正确题数 / 模块题数</span></div>
+            <div class="panel-b" style="padding:0"><div class="tscroll w560"><table class="tb" id="repTblModules"></table></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="foot-note no-print">
+        评分规则：每题 0.5 分，多选题须全部选对计分；未作答按未得分计。用时统计自点击「开始考试」至交卷。
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="toolbar no-print">
+        <span class="sec-title" style="border:0;padding:0;margin:0;width:auto">逐题解析</span>
+        <div class="seg" id="revFilter">
+          <button data-f="all" class="on">全部题目</button>
+          <button data-f="wrong">只看错题</button>
+          <button data-f="skip">只看未作答</button>
+          <button data-f="ok">只看答对</button>
+        </div>
+        <select id="revModule" style="height:30px;border:1px solid var(--line);border-radius:3px;background:#fff;font-size:12.5px;padding:0 6px"></select>
+        <span class="spacer" style="flex:1"></span>
+        <button class="btn" id="btnPrint">打印 / 导出 PDF</button>
+        <button class="btn btn-primary" id="btnRestart">重新考试</button>
+      </div>
+      <div id="revList"></div>
+    </div>
+  </section>
+</main>
+
+<!-- ================= 交卷确认 ================= -->
+<div class="mask hide" id="mask">
+  <div class="dialog">
+    <div class="dialog-h">确认交卷</div>
+    <div class="dialog-b" id="dlgBody"></div>
+    <div class="dialog-f">
+      <button class="btn" id="dlgCancel">继续答题</button>
+      <button class="btn btn-primary" id="dlgOk">确认交卷</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 题库 ================= -->
+<script type="application/json" id="qbank">{"title":"AI Agent 知识考试","perScore":0.5,"questions":[{"id":"c1-01","module":"第1章 AI Agent 入门","type":"single","stem":"现代 Agent 的最小工程公式常用「Agent = 大脑 + 眼睛 + 手脚」来直观描述，其中「眼睛」对应的是下列哪一项？","options":[{"id":"A","text":"LLM（大语言模型），负责决策"},{"id":"B","text":"上下文，决定 Agent 能看到什么"},{"id":"C","text":"工具，决定 Agent 能做什么"},{"id":"D","text":"Environment（环境），提供外部反馈"}],"answer":["B"],"explain":"书中公式为 Agent = LLM + 上下文 + 工具，依次对应大脑、眼睛、手脚：LLM 是决策核心，上下文决定它看到什么，工具决定它能做什么。A 对应大脑，C 对应手脚；D 的 Environment（环境）在强化学习视角下是 Agent 之外与之闭环交互的一方。"},{"id":"c1-02","module":"第1章 AI Agent 入门","type":"single","stem":"在 Agent 的生产形态「Agent = Model + Harness」中，下列哪一项属于 Harness 而非 Environment（环境）？","options":[{"id":"A","text":"沙箱内随行动变化的文件与进程"},{"id":"B","text":"用户与物理世界"},{"id":"C","text":"工具定义、调用适配器与沙箱权限"},{"id":"D","text":"被访问的外部数据库与网页"}],"answer":["C"],"explain":"书中界定 Harness 是「Agent 边界内、模型之外」的运行与治理层，涵盖上下文管理、工具接口、约束、验证、纠正；工具定义、调用适配器、沙箱权限与重置机制都归它。A、B、D 都是 Agent 之外、与其闭环交互的对象，属 Environment（环境）。"},{"id":"c1-03","module":"第1章 AI Agent 入门","type":"single","stem":"五类工具中，事件触发工具与感知、执行、协作三类在调用方式上的本质区别是什么？","options":[{"id":"A","text":"它只能由模型在思考阶段主动发起调用"},{"id":"B","text":"它不是 Agent 主动调用的，而是由外部输入驱动 Agent 开始执行"},{"id":"C","text":"它无需注册，触发时才被系统临时发现"},{"id":"D","text":"它只改变世界，不向 Agent 返回任何结果"}],"answer":["B"],"explain":"书中指出事件触发工具与前三类的本质区别在于「不是 Agent 主动调用的」，而是作为外部输入驱动 Agent 开始执行，包含注册（Agent 主动声明）与触发（外部事件异步回调）两个时刻。A、C 与注册—触发机制相悖；D 混淆了执行工具的作用性质。"},{"id":"c1-04","module":"第1章 AI Agent 入门","type":"multiple","stem":"Harness 由五个要素构成。下列哪些属于这五要素？","options":[{"id":"A","text":"Context（上下文管理）"},{"id":"B","text":"Constrain（约束）"},{"id":"C","text":"Environment（环境）"},{"id":"D","text":"Correct（纠正）"}],"answer":["A","B","D"],"explain":"Harness 五要素为 Context、Tools、Constrain、Verify、Correct，分别管信息充分、接口清晰、故障安全默认值、结构化验证与不暴露中间态。C 的 Environment（环境）位于 Agent 边界之外，不属于 Harness。"},{"id":"c1-05","module":"第1章 AI Agent 入门","type":"single","stem":"Harness 的 Verify（验证）要素强调安全检查应当依据什么信息？","options":[{"id":"A","text":"模型自由生成的解释性文本"},{"id":"B","text":"模型思考过程（reasoning）中的推理结论"},{"id":"C","text":"工具返回的结构化数据，如 JSON 字段"},{"id":"D","text":"用户对本次操作的补充确认意见"}],"answer":["C"],"explain":"书中明确 Verify 的安全检查「只看结构化数据如工具返回的 JSON 字段，不看模型自由生成的文本」，因为自由文本可被模型自圆其说。A、B 都属于模型自由生成的内容；D 属人工干预（Human in the loop）范畴，不是 Verify 的自动判定机制。"},{"id":"c1-06","module":"第1章 AI Agent 入门","type":"judge","stem":"即使仿真环境与 Agent 运行在同一个进程中，它仍然属于 Environment（环境）。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["T"],"explain":"书中明确「归属不看物理部署位置」：判断一项内容属于 Harness 还是 Environment，依据是它位于 Agent 边界之内还是之外，而非进程或机器位置。因此与 Agent 同进程运行的仿真环境依然是 Environment，它提供真实的状态变化与观察。"},{"id":"c1-07","module":"第1章 AI Agent 入门","type":"single","stem":"在上下文消融实验（Ablation Study）中，移除工具定义后，模型最典型的表现是什么？","options":[{"id":"A","text":"直接报错退出，无法给出任何输出"},{"id":"B","text":"给出格式工整、语气笃定的答案，数据却来自参数记忆"},{"id":"C","text":"反复调用不存在的工具，直到耗尽迭代预算"},{"id":"D","text":"回复变得简短，但任务完成率基本不变"}],"answer":["B"],"explain":"书中消融结论指出，工具定义是行动能力的基础，缺失它模型仍会给出格式工整、语气笃定的答案，数据却来自参数记忆，这正是「给出了回答不等于完成了任务」的典型失败。C 描述的是缺失工具执行结果的后果，即盲目重试；D 明显低估了工具定义对任务成功率的影响。"},{"id":"c1-08","module":"第1章 AI Agent 入门","type":"multiple","stem":"从 API 视角看，下列哪些属于 Agent 上下文中的「静态前缀」？","options":[{"id":"A","text":"系统提示词（System Prompt）"},{"id":"B","text":"工具定义（Tool Definitions）"},{"id":"C","text":"用户消息（User Messages）"},{"id":"D","text":"模型回复（Assistant Messages）"}],"answer":["A","B"],"explain":"书中把上下文五个部分分为两类：系统提示词与工具定义是静态前缀；用户消息、模型回复、工具执行结果构成随交互增长的动态消息历史即轨迹（trajectory），因此有「Agent 的上下文 = 静态前缀 + 轨迹」。C、D 属于轨迹，随每轮交互持续增长，不是静态前缀。"},{"id":"c1-09","module":"第1章 AI Agent 入门","type":"single","stem":"ReAct（Reasoning + Acting）虽名含「思考」与「行动」两个词，其实际循环包含的是哪三个环节？","options":[{"id":"A","text":"思考、观察、记忆"},{"id":"B","text":"思考、行动（调用工具）、观察（工具返回结果）"},{"id":"C","text":"行动、观察、反思"},{"id":"D","text":"规划、思考、行动"}],"answer":["B"],"explain":"书中强调 ReAct 名称里只有思考与行动两个词，实际循环却包含三个环节：思考、行动（调用工具）、观察（工具返回结果），即「想→做→看」不断重复直到任务完成。A 以记忆替代行动环节；C 把思考置于行动之后并加入反思；D 把规划拆成独立环节，都与书中表述不符。"},{"id":"c1-10","module":"第1章 AI Agent 入门","type":"single","stem":"护栏（Guardrails）分为三层，其划分依据与顺序是下列哪一项？","options":[{"id":"A","text":"按处理先后顺序分为输入层、处理层、输出层"},{"id":"B","text":"按被绕过的难度分为上下文层、执行层、数据层"},{"id":"C","text":"按部署位置分为本地层、云端层、网络层"},{"id":"D","text":"按责任主体分为模型层、框架层、用户层"}],"answer":["B"],"explain":"书中明确护栏按被绕过的难度、而不是处理先后顺序，分为上下文层（管模型能看到什么）、执行层（管模型能做什么）、数据层（管世界最终能被改成什么样）；越靠下越不依赖模型自己的判断，越难被一次攻击穿透。A 正是书中特意澄清要避免的误解。"},{"id":"c1-11","module":"第1章 AI Agent 入门","type":"multiple","stem":"下列哪些属于书中贯穿全书的设计模式？","options":[{"id":"A","text":"提议者—审核者（Proposer-Reviewer）"},{"id":"B","text":"渐进式披露（Progressive Disclosure）"},{"id":"C","text":"只增不改（Append-only）"},{"id":"D","text":"全量重写（Full Rewrite）"}],"answer":["A","B","C"],"explain":"书中给出五个设计模式：提议者—审核者、渐进式披露、只增不改、边界集 + 保留集、最小 diff + 可回滚。其中只增不改换来的是可缓存、可重放、可审计，改动越靠前作废的缓存越多；D 的全量重写与该原则直接冲突，不是书中的设计模式。"},{"id":"c1-12","module":"第1章 AI Agent 入门","type":"judge","stem":"越狱（Jailbreak）指攻击者通过外部数据间接操纵模型行为，提示注入（Prompt Injection）则指用户自己试图绕过模型的安全限制。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"书中定义恰好相反：越狱是用户自己试图绕过模型的安全限制，提示注入则是攻击者通过外部数据（网页、邮件、文档等）间接操纵模型行为。两者都发生在上下文层，但发起者与作用路径不同。题干把二者的定义对调，因此是错误的。"},{"id":"c1-13","module":"第1章 AI Agent 入门","type":"single","stem":"工作流（Workflow）与自主 Agent（Autonomous Agent）最核心的区别是什么？","options":[{"id":"A","text":"工作流不能调用工具，自主 Agent 可以调用"},{"id":"B","text":"工作流的执行路径由代码预定义，自主 Agent 根据环境反馈实时决定路径"},{"id":"C","text":"工作流只能用于文生图，自主 Agent 只能用于编码"},{"id":"D","text":"工作流的优势是变通性强，自主 Agent 的优势是安全性高"}],"answer":["B"],"explain":"书中指出工作流通过预定义代码路径编排 LLM 与工具，执行路径确定；自主 Agent 的执行路径不是预定义的，而是根据环境反馈实时决定，因此必须设计明确的停止条件。A、C 与书中表述不符；D 把两者优势对调，工作流的优势是严格流程控制与安全性，缺乏变通性才是它的主要局限。"},{"id":"c1-14","module":"第1章 AI Agent 入门","type":"multiple","stem":"书中归纳的 Agent 行为改变的三条互补路径包括下列哪些？","options":[{"id":"A","text":"上下文适应"},{"id":"B","text":"外部产物更新"},{"id":"C","text":"参数更新"},{"id":"D","text":"推理硬件升级"}],"answer":["A","B","C"],"explain":"书中三条路径是上下文适应（当前任务内、快而低成本、受窗口约束）、外部产物更新（知识文档、Prompt/Skill、程序与 Harness，可审计可修订）、参数更新（后训练，部署成本高但泛化广）。三者是不同时间尺度上的协同，不是互斥分类；D 的硬件升级不在其列。"},{"id":"c1-15","module":"第1章 AI Agent 入门","type":"single","stem":"工程范式演进存在层层包含关系，下列哪一项的包含顺序是正确的？","options":[{"id":"A","text":"Harness 工程 ⊂ 提示工程 ⊂ 上下文工程"},{"id":"B","text":"提示工程 ⊂ 上下文工程 ⊂ Harness 工程 ⊂ Loop 工程 ⊂ Graph 工程"},{"id":"C","text":"Graph 工程 ⊂ Loop 工程 ⊂ Harness 工程 ⊂ 提示工程"},{"id":"D","text":"上下文工程 ⊂ 提示工程 ⊂ Graph 工程 ⊂ Loop 工程"}],"answer":["B"],"explain":"书中给出的包含关系是提示工程 ⊂ 上下文工程 ⊂ Harness 工程 ⊂ Loop 工程 ⊂ Graph 工程，单个 Agent 循环正是执行图中的一个节点，Graph 工程把 Agent 循环、确定性程序与人工审批组织成显式执行图。A、C、D 都颠倒或错置了层级。"},{"id":"c1-16","module":"第1章 AI Agent 入门","type":"judge","stem":"由于通用工具覆盖面更广，在任何场景下都应优先使用通用工具，避免封装专用工具。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"书中的原则是「通用基础能力用于组合与探索；专用工具用于约束高风险和强业务规则操作」，并明确指出通用工具并不总是优于专用工具，其通用性反而扩大了出错和攻击面。因此对支付、删除数据、发送邮件、生产部署等高风险或强业务约束操作，仍应封装为参数明确、权限受限且全程可审计的专用工具。"},{"id":"c2-01","module":"第2章 上下文工程","type":"single","stem":"关于上下文在 Agent 中的地位，下列哪项表述符合书中的观点？","options":[{"id":"A","text":"模型本身的智力才是 Agent 能力的真正关键，上下文只是辅助"},{"id":"B","text":"上下文工程是 Harness 中「上下文与工具」层面的核心实现，上下文的质量才是 Agent 能力的真正关键"},{"id":"C","text":"只要模型足够强，上下文如何组织都不会影响任务表现"},{"id":"D","text":"上下文工程是纯粹的技术问题，与团队的组织方式无关"}],"answer":["B"],"explain":"书中指出上下文工程是 Harness 中「上下文与工具」层面的核心实现，模型本身的智力只是基础，上下文的质量才是 Agent 能力的真正关键，中等模型配精心组织的上下文往往胜过顶级模型在信息匮乏下的盲目摸索。C 与该判断相悖；D 错误，书中强调它更是组织问题。"},{"id":"c2-02","module":"第2章 上下文工程","type":"single","stem":"大模型 API 中 messages 列表支持的四种角色（role）是下列哪一组？","options":[{"id":"A","text":"system、user、assistant、tool"},{"id":"B","text":"system、user、assistant、function"},{"id":"C","text":"system、prompt、completion、tool"},{"id":"D","text":"instruction、user、assistant、result"}],"answer":["A"],"explain":"四种消息角色为 system（开发者编写、优先级最高、置最前）、user、assistant（含模型之前的回复与工具调用请求）、tool（工具执行结果，由 tool_call_id 关联）。B 的 function 是易混旧命名；C、D 把提示、补全等概念误当成角色。"},{"id":"c2-03","module":"第2章 上下文工程","type":"multiple","stem":"关于 KV Cache 的使用，书中给出的核心结论包括下列哪些？","options":[{"id":"A","text":"系统提示词和工具定义一旦确定就不要改"},{"id":"B","text":"动态信息永远追加到末尾"},{"id":"C","text":"可以自行拼接 USER: 与 ASSISTANT: 等文本格式以节省 token"},{"id":"D","text":"应使用标准 API 格式，不要自行拼接消息"}],"answer":["A","B","D"],"explain":"书中总结三条核心结论：系统提示词与工具定义一旦确定就不要改、动态信息永远追加到末尾、使用标准 API 格式不要自行拼接消息。C 与之直接冲突：自行拼接的根本问题是偏离模型训练格式，会削弱多步思考能力，而且缓存只认 token 字节序列，自行拼接并不能节省计算。"},{"id":"c2-04","module":"第2章 上下文工程","type":"single","stem":"在系统提示词中注入随请求变化的时间戳，会导致什么后果？","options":[{"id":"A","text":"首 token 延迟明显上升，且因前缀变动导致其后大部分输入 token 的 K、V 需要重新计算"},{"id":"B","text":"完全不影响性能，因为时间戳只占极少的 token"},{"id":"C","text":"只影响最后一次 API 调用的输出长度"},{"id":"D","text":"只会略微降低答案准确率，不影响延迟与成本"}],"answer":["A"],"explain":"书中时间戳事故显示，系统提示词位于前部，注入动态值使首 token 延迟从 0.5 秒涨到 3 至 5 秒、月度推理账单几乎翻倍，因为首个不同 token 及其后的 KV 状态需重新计算，此前位置不受影响。B、D 低估了前缀变动的影响；C 误解了失效机制。"},{"id":"c2-05","module":"第2章 上下文工程","type":"single","stem":"KV Cache 与 Prompt Cache 的关系，下列哪项表述正确？","options":[{"id":"A","text":"两者是同一机制在不同文档里的两种叫法"},{"id":"B","text":"KV Cache 是模型内部机制，加速单次请求内的 token 生成；Prompt Cache 是推理引擎优化，减少跨请求的重复计算"},{"id":"C","text":"KV Cache 用于跨请求复用，Prompt Cache 用于单次请求内加速"},{"id":"D","text":"Prompt Cache 由模型架构决定，KV Cache 由推理引擎实现"}],"answer":["B"],"explain":"书中明确 KV Cache 与 Prompt Cache 是两个层级：前者是模型内部机制，加速单次请求内的 token 生成；后者是推理引擎优化，减少跨请求的重复计算，读取成本约为首次计算的十分之一。A 把两个层级混同；C、D 把两者的机制与适用范围对调。"},{"id":"c2-06","module":"第2章 上下文工程","type":"multiple","stem":"关于历史思考（reasoning 内容）的回传策略，下列说法符合书中内容的有哪些？","options":[{"id":"A","text":"DeepSeek R1 官方做法是剥离全部历史思考，只回传 content"},{"id":"B","text":"DeepSeek V4 只要请求携带 tools 参数，两个 user 消息之间的 assistant 消息必须原样回传 reasoning 内容，否则 API 直接返回 400 错误"},{"id":"C","text":"Kimi K2 与 GLM-5 采用与 DeepSeek V4 相同的协议"},{"id":"D","text":"Claude 允许 thinking block 脱离签名单独回传"}],"answer":["A","B","C"],"explain":"DeepSeek R1 剥离全部历史思考、只回传 content；DeepSeek V4 相反，携带 tools 时两个 user 消息之间的 assistant 必须原样回传 reasoning 内容。D 错误：Claude 要求 thinking block 随签名回传。"},{"id":"c2-07","module":"第2章 上下文工程","type":"judge","stem":"按照 ReAct 论文的形式定义，Agent 的下一步行动只取决于眼前最新收到的那一条输入。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"书中给出的 ReAct 形式定义中，上下文由此前的观察与行动序列加上当前观察共同构成，最值得注意的一点正是「Agent 的下一步行动取决于截至当前的完整交互上下文，而不只是眼前这一条输入」。对 LLM Agent 而言，用户消息与工具执行结果是观察，模型回复与工具调用请求是行动。"},{"id":"c2-08","module":"第2章 上下文工程","type":"single","stem":"关于模型注意力在上下文中的分布，下列哪项表述符合书中内容？","options":[{"id":"A","text":"注意力储存池（Attention Sink）指序列最后一个 token 吸收了异常高的注意力权重"},{"id":"B","text":"位置偏好（Position Bias）指模型对上下文开头和结尾的信息分配更高注意力，中间部分更容易被忽视"},{"id":"C","text":"注意力热力图呈矩形，因为每个词都能看到全部上下文"},{"id":"D","text":"位置偏好属于模型缺陷，只要把上下文加长就可以消除"}],"answer":["B"],"explain":"书中指出位置偏好（Position Bias）指模型对上下文开头和结尾的信息分配更高注意力，中间部分更容易被忽视。A 把注意力储存池（Attention Sink）安在最后一个 token，它实际指序列首个 token 吸收异常高权重；C 与热力图呈三角形相反；D 误判来源。"},{"id":"c2-09","module":"第2章 上下文工程","type":"single","stem":"关于系统提示词的结构化写法，书中的建议是下列哪一项？","options":[{"id":"A","text":"全部使用 Markdown，因为模型对标题层级最敏感"},{"id":"B","text":"全部使用 XML，因为 XML 是唯一机器可解析的格式"},{"id":"C","text":"XML 负责机器可解析的精确语义，Markdown 负责人机共读的组织逻辑"},{"id":"D","text":"结构化标签没有价值，纯自然语言段落的效果最好"}],"answer":["C"],"explain":"书中提出结构化提示的双层结构：XML 负责机器可解析的精确语义，Markdown 负责人机共读的组织逻辑；如 working_directory 这类标签名本身就携带语义，等价的纯文本则需模型额外推断。A、B 各执一端，D 否定了标签名携带语义的价值。"},{"id":"c2-10","module":"第2章 上下文工程","type":"judge","stem":"工具定义（tools）是 messages 列表中的第五种消息角色，需要以 role 取值为 tools 的消息形式提交。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"书中明确指出工具定义（tools）是请求的独立字段，而不是消息角色，因此「四种消息角色 + tools 字段」恰好覆盖第一章的五个上下文组成部分。消息角色只有 system、user、assistant、tool 四种，工具执行结果由 tool 角色承载。"},{"id":"c2-11","module":"第2章 上下文工程","type":"multiple","stem":"上下文层防御提示注入的手段包括下列哪些？","options":[{"id":"A","text":"来源标记，例如用带 source 属性的标签包裹外部内容"},{"id":"B","text":"结构化角色，严格使用 system、user、assistant、tool"},{"id":"C","text":"输入清洗，过滤可疑模式"},{"id":"D","text":"彻底删除所有外部内容，不再读取网页与文档"}],"answer":["A","B","C"],"explain":"书中给出上下文层三种手段：来源标记、结构化角色、输入清洗，并强调三者只能降低攻击成功率、无法做到万无一失，其中输入清洗最易被措辞变体绕过，只能作辅助。D 不是书中手段，也与感知工具需要读取外部信息的定位冲突；正因上下文层给不出保证，才需要执行层与数据层兜底。"},{"id":"c2-12","module":"第2章 上下文工程","type":"single","stem":"Agent Skills 采用渐进式披露，其第一层（元数据）指的是什么？","options":[{"id":"A","text":"完整的 SKILL.md 正文"},{"id":"B","text":"SKILL.md 顶部 YAML frontmatter 中的 name 与 description"},{"id":"C","text":"通过文件引用下钻的子文档"},{"id":"D","text":"运行该 Skill 所需的命令行参数列表"}],"answer":["B"],"explain":"书中把 Skills 分为三层：第一层元数据是 SKILL.md 顶部 YAML frontmatter 中的 name 与 description；第二层是按需加载的完整正文；第三层是文件引用下钻的子文档。A 属第二层，C 属第三层，D 混淆了 Skill 与工具参数。"},{"id":"c2-13","module":"第2章 上下文工程","type":"single","stem":"Agent 状态栏（Agent Status Bar）在实现上的关键特征是下列哪一项？","options":[{"id":"A","text":"作为 system 消息插入在上下文最前面"},{"id":"B","text":"作为一条 user 角色的消息插入到上下文末尾，内容是框架自动生成的元信息"},{"id":"C","text":"直接改写系统提示词里的对应段落"},{"id":"D","text":"由模型在每轮回复中以 tool_calls 的形式输出"}],"answer":["B"],"explain":"书中指出状态栏是框架在上下文末尾持续注入的结构化状态摘要，在 API 层面是作为一条 user 角色的消息插入到末尾，而不是修改 system 消息，并说明「这里的 user 角色只是 API 协议层面的技术选择」。A、C 会破坏静态前缀缓存；D 与框架自动注入的定位不符。"},{"id":"c2-14","module":"第2章 上下文工程","type":"judge","stem":"上下文腐化（Context Rot）指上下文装得下但找不到关键信息，Agent 表面运行正常而决策质量悄然下降，比上下文溢出更隐蔽。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["T"],"explain":"书中明确区分这对概念：溢出是「装不下了」，腐化是「装得下但找不到了」。后者更为隐蔽，Agent 表面运行正常但决策质量悄然下降，往往比直接报错或触发溢出保护更难被发现，因此题干对上下文腐化的描述与书中一致。"},{"id":"c2-15","module":"第2章 上下文工程","type":"multiple","stem":"关于上下文压缩，下列说法符合书中内容的有哪些？","options":[{"id":"A","text":"压缩发生在两次 API 调用之间，System Prompt 与 Tool Definitions 永远不动"},{"id":"B","text":"本书把压缩率定义为压缩后体积除以原文体积，数值越小表示压得越狠"},{"id":"C","text":"压缩最容易丢失的是早期的架构决策、约束背后的理由和失败的路径"},{"id":"D","text":"为保证信息完整，应当在每一轮迭代结束后立即执行一次压缩"}],"answer":["A","B","C"],"explain":"书中指出压缩由框架在两次 API 调用之间预处理消息列表，System Prompt 与工具定义永远不动，压缩对象是对话历史中的工具结果；压缩率定义为压缩后体积除以原文体积，数值越小压得越狠；且最容易丢失早期的架构决策、约束理由与失败路径。D 与批量压缩的正确做法相反。"},{"id":"c2-16","module":"第2章 上下文工程","type":"single","stem":"提示注入（Prompt Injection）在 Agent 系统中比在普通聊天机器人中更危险，根本原因是什么？","options":[{"id":"A","text":"Agent 的上下文窗口更长，恶意文本更难被清理干净"},{"id":"B","text":"Agent 拥有工具调用能力，被劫持后可直接对外产生副作用"},{"id":"C","text":"Agent 的系统提示词通常更短，缺少安全规则"},{"id":"D","text":"Agent 的回复一定包含代码，容易被执行成脚本"}],"answer":["B"],"explain":"书中指出提示注入的本质是攻击者通过 Agent 处理的外部内容，把伪装成系统指令的文本混入上下文以劫持 Agent 的行为；它在 Agent 系统中更危险，因为 Agent 拥有工具调用能力，劫持后可造成真实的副作用。A、C 与危险程度无关，D 把注入与生成代码混为一谈。"},{"id":"c3-01","module":"第3章 用户记忆和知识库","type":"single","stem":"用户记忆与知识库的关系，下列哪项表述符合书中内容？","options":[{"id":"A","text":"用户记忆是面向所有用户共享的集体知识，知识库是针对单个用户的个性化记忆"},{"id":"B","text":"用户记忆是针对单个用户的个性化记忆，知识库是面向所有用户共享的集体知识"},{"id":"C","text":"两者的底层技术完全不同，彼此没有交集"},{"id":"D","text":"用户记忆只存事实字段，知识库只存向量"}],"answer":["B"],"explain":"书中定义用户记忆是针对单个用户的个性化记忆，知识库是面向所有用户共享的集体知识；前者让 Agent 成为懂你的助手，后者让它成为领域专家。A 把两者对调；C 错误，两者共用向量检索、知识压缩等底层技术，也面临同样的麻烦；D 混淆了内容与格式。"},{"id":"c3-02","module":"第3章 用户记忆和知识库","type":"single","stem":"关于记忆基准 LoCoMo（Long-term Conversational Memory），下列哪项描述符合书中内容？","options":[{"id":"A","text":"它是评估工具调用准确率的基准，用例均为单轮问答"},{"id":"B","text":"它构造平均约 300 轮、最多 35 个会话的超长多轮对话，通过问答、事件摘要与多模态对话生成三类任务考察记忆"},{"id":"C","text":"它只使用单跳问题，不包含时间推理与对抗性问题"},{"id":"D","text":"它只由人工评委逐一评分，不使用 LLM-as-a-judge"}],"answer":["B"],"explain":"书中介绍 LoCoMo 是代表性的记忆基准，构造平均约 300 轮、最多 35 个会话的超长多轮对话，通过问答（含单跳、多跳、时间推理与对抗性）、事件摘要与多模态对话生成三类任务考察记忆。A 与工具调用基准混淆；C 漏了多跳等题型；D 与 LLM-as-a-judge 不符。"},{"id":"c3-03","module":"第3章 用户记忆和知识库","type":"multiple","stem":"用户记忆能力的三层次评估框架包括下列哪些层次？","options":[{"id":"A","text":"基础回忆"},{"id":"B","text":"多会话检索"},{"id":"C","text":"主动服务"},{"id":"D","text":"参数微调"}],"answer":["A","B","C"],"explain":"书中三层次评估框架为：第一层基础回忆，准确存取用户直接提供、结构化、无歧义的信息；第二层多会话检索，跨对象跨时期检索相关信息并推理；第三层主动服务，综合多个会话甚至很久以前的信息提供预见性帮助，如订国际航班时关联护照信息并预警过期。D 属参数更新路径。"},{"id":"c3-04","module":"第3章 用户记忆和知识库","type":"single","stem":"在用户记忆的四种存储格式之间做选择时，书中的实践标准是什么？","options":[{"id":"A","text":"所有数据都用 Simple Notes，以最低成本保证一致性"},{"id":"B","text":"关键且少量的数据用 Advanced JSON Cards 以保证可检索性，大量且非关键的对话事实用 Simple Notes 以降低成本"},{"id":"C","text":"所有数据都用 Enhanced Notes，以完整保留叙事结构"},{"id":"D","text":"只使用 JSON Cards，并去掉时间戳等额外字段以压缩体积"}],"answer":["B"],"explain":"选择标准是：关键且少量的数据（如用户偏好、人物关系）用 Advanced JSON Cards 保证可检索性；大量且非关键的对话事实用 Simple Notes 降低成本。A、C 走向极端；D 恰是要避免的，该格式靠 person、relationship 字段实现消歧与关联。"},{"id":"c3-05","module":"第3章 用户记忆和知识库","type":"judge","stem":"轨迹（Trajectory）是按相关性裁剪的动态子集，而工作记忆是不可变的、按时间追加的完整事件序列。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"书中对两者的性质有明确区分：轨迹是按时间追加、不可变的完整事件序列；工作记忆对应 Agent 的上下文窗口，是经过筛选和激活的动态子集，按相关性裁剪。题干把两者的性质对调，因此错误。书中还强调记忆层次、存储格式、认知科学分类是正交维度，可以自由组合。"},{"id":"c3-06","module":"第3章 用户记忆和知识库","type":"single","stem":"在认知科学的记忆分类中，「从具体事件抽象出的一般性知识」对应哪一种记忆？","options":[{"id":"A","text":"情景记忆（Episodic Memory）"},{"id":"B","text":"语义记忆（Semantic Memory）"},{"id":"C","text":"程序记忆（Procedural Memory）"},{"id":"D","text":"工作记忆（Working Memory）"}],"answer":["B"],"explain":"书中把认知科学分类对应「存什么」：情景记忆是具体事件与经历，语义记忆是从具体事件抽象出的一般性知识，程序记忆是行为模式与流程，工作记忆则对应 Agent 的上下文窗口。A 描述的是具体经历，C 描述的是行为流程，D 与上下文窗口挂钩，都不符合题干给出的定义。"},{"id":"c3-07","module":"第3章 用户记忆和知识库","type":"multiple","stem":"关于 Mem0 v3 的记忆机制，下列说法符合书中内容的有哪些？","options":[{"id":"A","text":"把冲突处理从写入阶段移到检索阶段，抽取事实时只做 ADD"},{"id":"B","text":"查询时融合语义相似度、BM25 关键词和实体匹配，并结合时间排序"},{"id":"C","text":"让「住在北京」与「搬到上海」作为带时间信息的两条事实并存"},{"id":"D","text":"继续强依赖外部图存储来支持多跳与时序推理"}],"answer":["A","B","C"],"explain":"书中介绍 Mem0 v3 把冲突处理移到检索阶段：只用一次 LLM 调用抽取事实且只做 ADD，因此「住在北京」与「搬到上海」作为带时间信息的两条事实并存；查询时融合语义相似度、BM25 关键词与实体匹配并结合时间排序。D 错误：当前开源版本已移除外部图存储。"},{"id":"c3-08","module":"第3章 用户记忆和知识库","type":"single","stem":"在三类分块（Chunking）策略中，被书中称为「目前生产系统最常用的默认选择」的是哪一种？","options":[{"id":"A","text":"固定大小切分"},{"id":"B","text":"递归或结构感知切分"},{"id":"C","text":"语义切分"},{"id":"D","text":"按文件体积等分切分"}],"answer":["B"],"explain":"书中列出三类分块策略：固定大小切分按固定 token 数切分并保留重叠，实现简单但无视文档结构；递归或结构感知切分按章节标题、段落、句子等自然边界递归切分，是目前生产系统最常用的默认选择；语义切分在相邻句子嵌入相似度的断崖处下刀，质量更高但需额外嵌入计算。D 不是书中给出的一类。"},{"id":"c3-09","module":"第3章 用户记忆和知识库","type":"single","stem":"嵌入检索中为什么使用余弦相似度而不是向量之间的距离？","options":[{"id":"A","text":"因为余弦相似度的计算量明显更小"},{"id":"B","text":"因为我们关心两个向量的方向是否一致、语义是否相近，而不是它们的长度"},{"id":"C","text":"因为余弦相似度的取值范围固定为 0 到 1，便于比较"},{"id":"D","text":"因为距离度量只适用于稀疏向量，不适用于稠密向量"}],"answer":["B"],"explain":"书中解释用余弦相似度而非距离，是因为我们关心的是两个向量的方向是否一致（语义是否相近），而不是它们的长度（文本的长度或频率）；示例中「如何养猫」与「猫咪饲养指南」的余弦相似度约为 0.99，与「股票投资策略」约为 0.25。A、C 把它当成工程便利；D 与稀疏、稠密的划分无关。"},{"id":"c3-10","module":"第3章 用户记忆和知识库","type":"single","stem":"BM25 相对 TF-IDF 最朴素实现的经典修正是什么？","options":[{"id":"A","text":"引入词频饱和与文档长度归一化"},{"id":"B","text":"把 IDF 的分子由 N 换成 N 与 DF 之和"},{"id":"C","text":"用词袋模型取代对词序的建模"},{"id":"D","text":"用稠密向量代替稀疏向量表示"}],"answer":["A"],"explain":"书中指出 TF-IDF 最朴素实现有两个局限：词频随出现次数线性增长、未校正文档长度；BM25 引入词频饱和（k1 控制）与长度归一化（b 控制）来做经典修正。B 记错了公式，BM25 的 IDF 分子是 N 减 DF 再加 0.5；C 是稀疏嵌入的理论基石，D 属范式切换。"},{"id":"c3-11","module":"第3章 用户记忆和知识库","type":"judge","stem":"稠密检索擅长精确匹配但读不懂同义词，稀疏检索懂语义但可能漏掉关键词。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"书中描述的两类盲区恰好相反：稠密检索懂语义但可能漏掉关键词，例如搜 HTTP-403 可能返回泛泛的服务器错误讨论；稀疏检索精确匹配但读不懂同义词，例如搜 kitty 找不到只写了 cat 的文档。正因两者互补，才需要混合检索并行融合后再做神经重排序。题干把特性对调了。"},{"id":"c3-12","module":"第3章 用户记忆和知识库","type":"multiple","stem":"关于混合检索及其中各组件，下列说法符合书中内容的有哪些？","options":[{"id":"A","text":"混合检索流水线为并行检索、结果融合、神经重排序三个阶段"},{"id":"B","text":"RRF（倒数排名融合）完全抛开原始得分、只看排名，其平滑常数常取 60"},{"id":"C","text":"双编码器（Bi-Encoder）为查询和文档独立生成向量，速度快，适合海量初筛"},{"id":"D","text":"跨编码器（Cross-Encoder）先独立编码再计算向量距离，速度比双编码器更快"}],"answer":["A","B","C"],"explain":"书中三阶段流水线即并行检索、结果融合、神经重排序；RRF 完全抛开原始得分只看排名，按 1/(k+rank) 累加得分，k 常取 60，缺点是丢失了原始得分中的相关性信号；双编码器独立生成向量、速度快，适合海量初筛。D 把跨编码器说反了，它拼接后逐词比对，更准但更慢。"},{"id":"c3-13","module":"第3章 用户记忆和知识库","type":"single","stem":"在 OpenViking 的文件系统范式中，按需加载的 L0、L1、L2 三层分别对应什么？","options":[{"id":"A","text":"L0 全文、L1 概览、L2 摘要"},{"id":"B","text":"L0 摘要（约 100 tokens 的一句话概述）、L1 概览（约 2,000 tokens 的核心信息与使用场景）、L2 完整原始内容"},{"id":"C","text":"L0 原始向量、L1 压缩向量、L2 元数据"},{"id":"D","text":"L0 目录名、L1 文件路径、L2 版本历史"}],"answer":["B"],"explain":"书中介绍 OpenViking 把记忆、资源、技能映射为虚拟文件系统中的目录和文件，每个条目拥有唯一 URI；L0 是约 100 tokens 的一句话摘要，L1 是约 2,000 tokens 的核心信息与使用场景，L2 是完整原始内容，大部分查询加载到 L1 即可完成决策。"},{"id":"c3-14","module":"第3章 用户记忆和知识库","type":"judge","stem":"GraphRAG 把自然语言转为三元组时会不可避免地导致语义降级，条件判断与时间依赖可能丢失，因此书中推荐以完整自然语言保存核心信息、辅以结构化元数据索引的分层互补策略。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["T"],"explain":"书中指出 GraphRAG 的固有局限是将自然语言转为三元组不可避免地导致语义降级，条件判断与时间依赖会丢失，且提取错误会导致知识污染；因此推荐分层互补：以完整自然语言保存核心信息，辅以结构化元数据索引，只在多跳推理与精确消歧的垂直场景用图谱作专项索引。"},{"id":"c3-15","module":"第3章 用户记忆和知识库","type":"multiple","stem":"关于知识库的更新与整理，下列说法符合书中内容的有哪些？","options":[{"id":"A","text":"完整的更新机制必须同时包含事件触发的增量更新与周期触发的全量整理"},{"id":"B","text":"增量更新可把知识库当成代码库，把每次知识变更当成一个 Pull Request"},{"id":"C","text":"三层分离中，索引是可重建的派生物，Git 中已审核的知识才是真正的来源"},{"id":"D","text":"定期整理只需在已有摘要之间相互改写，不必回到原始数据核查"}],"answer":["A","B","C"],"explain":"书中要求完整更新机制同时包含事件触发的增量更新与周期触发的全量整理；增量更新的工程答案是把知识库当成代码库、把每次知识变更当成一个 Pull Request；三层分离中索引是可重建的派生物，Git 中已审核的知识才是真正的来源。D 与必须回到原始数据核查的要求相悖。"},{"id":"c3-16","module":"第3章 用户记忆和知识库","type":"single","stem":"上下文感知检索（Contextual Retrieval）与上下文感知压缩的差别，下列哪项表述正确？","options":[{"id":"A","text":"前者发生在索引期、针对知识库文本块、做加法补上下文；后者发生在运行期、针对会话对话历史、做减法去冗余"},{"id":"B","text":"前者发生在运行期、针对对话历史；后者发生在索引期、针对文本块"},{"id":"C","text":"两者都发生在索引期，区别只是一个用 LLM、一个用代码"},{"id":"D","text":"两者都发生在运行期，区别只是压缩率不同"}],"answer":["A"],"explain":"书中要求把二者划清界限：上下文感知检索发生在索引期、针对知识库的文本块、做加法，即先让 LLM 为文本块生成包含核心上下文的前缀摘要再拼接索引；上下文感知压缩发生在运行期、针对当前会话的对话历史、做减法去冗余。B 把两个维度同时对调，C、D 则混淆了二者的发生时机。"},{"id":"c4-01","module":"第4章 工具","type":"single","stem":"从调用方向与作用对象两个特征审视，事件触发工具与其余四类工具的关键差别是下列哪一项？","options":[{"id":"A","text":"它由 Agent 主动调用，作用是改变世界"},{"id":"B","text":"它由 Agent 注册、由外部事件触发，作用是驱动 Agent 开始执行"},{"id":"C","text":"它由用户直接调用，作用是向用户传递信息"},{"id":"D","text":"它由其他 Agent 调用，作用是驱动其他 Agent 分工"}],"answer":["B"],"explain":"书中指出五类工具可从调用方向与作用对象两个特征审视：感知、执行、协作、用户沟通四类均由 Agent 主动调用；事件触发工具则是「Agent 注册、外部触发」，作用是驱动 Agent 开始执行。A 是执行工具，C 是用户沟通工具，D 是协作工具。这两列并不构成交叉分类框架。"},{"id":"c4-02","module":"第4章 工具","type":"single","stem":"ACI（Agent-Computer Interface）的核心主张是什么？","options":[{"id":"A","text":"工具应对应底层 API 的原始操作，与后端接口保持一一对应"},{"id":"B","text":"工具应对应 Agent 的目标，而不是底层的 API 操作"},{"id":"C","text":"工具接口应优先照顾人类开发者的编码习惯"},{"id":"D","text":"工具数量越多，Agent 的能力边界就越清晰"}],"answer":["B"],"explain":"书中把 ACI 与 HCI 对标：「如果说 HCI 研究的是人如何与计算机交互，ACI 研究的就是 Agent 如何与计算机交互」，并强调工具应对应 Agent 的目标，而不是底层的 API 操作。A 与该主张相反；C 混淆了两种视角；D 与工具过多会伤害选择正确性的结论相悖。"},{"id":"c4-03","module":"第4章 工具","type":"multiple","stem":"在专用工具与通用执行器的取舍中，书中列出哪些应当退回专用工具的情况？","options":[{"id":"A","text":"涉及安全、权限与审计"},{"id":"B","text":"需要屏蔽平台差异并提供更好的反馈"},{"id":"C","text":"使用频率极高"},{"id":"D","text":"希望减少工具定义占用的 token 数量"}],"answer":["A","B","C"],"explain":"退回专用工具的四种情况：安全、权限与审计；屏蔽平台差异并给出更好的反馈，如 grep 与 find 在不同系统语法各异；使用频率极高；参数结构复杂。D 与事实相反：专用工具每个定义常占数百 token，而一份 Skill 在目录里只占几十个。"},{"id":"c4-04","module":"第4章 工具","type":"single","stem":"关于通用执行器与专用工具的默认取向，书中的结论是什么？","options":[{"id":"A","text":"专用工具优于通用工具，因为参数受 schema 约束更可靠"},{"id":"B","text":"通用工具优于专用工具，除非存在明确的安全、权限或性能理由"},{"id":"C","text":"两者没有优劣之分，应按开发者人数决定"},{"id":"D","text":"必须全部使用专用工具，才能保证可测试性"}],"answer":["B"],"explain":"书中给出的默认取向是「通用工具优于专用工具，除非存在明确的安全、权限或性能理由」，其背后逻辑是 LLM 本身具有强大的思考和代码生成能力，我们应该利用这种能力而不是限制它，一个 Python 解释器可以代替数十个特定功能的工具。A、D 与默认取向相反；C 提出的判据不是书中标准。"},{"id":"c4-05","module":"第4章 工具","type":"single","stem":"在参数结构复杂的情况下，为什么 Skill 反而更容易出错？","options":[{"id":"A","text":"Skill 无法表达任何参数，只能执行无参流程"},{"id":"B","text":"Skill 需要模型生成合法的命令行参数并转义引号等特殊字符，其转义规则比原生工具的 JSON 复杂得多，且不同命令行环境各有差异"},{"id":"C","text":"Skill 的正文过长，会挤占上下文窗口"},{"id":"D","text":"Skill 必须经过 MCP 协议转发，增加了传输开销"}],"answer":["B"],"explain":"书中指出 Skill 对模型提出了更高的要求，在参数复杂时更容易出错：Skill 需生成合法的命令行参数并转义引号等特殊字符，其转义规则比模型原生工具的 JSON 复杂得多，不同命令行环境还有所不同。A 与其实际能力不符；C 属上下文成本问题；D 与 Skill 的分发机制无关。"},{"id":"c4-06","module":"第4章 工具","type":"judge","stem":"工具描述的重点是讲清楚工具能做什么，至于它做不到什么、不接受什么输入，属于次要信息。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"书中明确指出边界比能力更重要：清晰列出工具的边界条件，即做不到什么、不接受什么输入，往往比描述能力本身更重要，因为大多数工具调用失败的根因不是模型不知道工具能做什么，而是不知道工具不能做什么。题干把主次关系说反了。这也解释了为什么调试时应优先检查工具描述，而不是怀疑模型能力。"},{"id":"c4-07","module":"第4章 工具","type":"single","stem":"工具描述最核心的目标是让模型知道什么？","options":[{"id":"A","text":"该工具在服务端是如何实现的"},{"id":"B","text":"什么时候使用该工具，而不只是它能做什么"},{"id":"C","text":"该工具的作者与版本号"},{"id":"D","text":"该工具调用的价格与耗时"}],"answer":["B"],"explain":"书中强调工具描述的核心是让 LLM 知道什么时候用，而不只是能做什么——「搜索相关内容」远不如「当需要获取实时信息或查找未知事实时使用」。A、C、D 都不是工具描述要解决的问题；关键在于把描述写成使用场景的判据，使模型在多个候选工具之间能够做出正确选择。"},{"id":"c4-08","module":"第4章 工具","type":"multiple","stem":"下列哪些属于书中指出的工具保真性违规？","options":[{"id":"A","text":"静默输入转换：工具在执行前悄悄修正输入参数，如把中文弯引号转为英文直引号导致匹配失败"},{"id":"B","text":"静默参数注入：在模型不知情时追加参数，如自动给 git commit 附加标记参数"},{"id":"C","text":"在工具描述中为参数给出具体示例，如 E.164 格式的电话号码"},{"id":"D","text":"在工具返回结果中明确告知参数已被规范化处理"}],"answer":["A","B"],"explain":"两种保真性违规：静默输入转换，如某版本 Cursor 把中文弯引号静默转为英文直引号，导致 old_string 与文件内容不匹配；静默参数注入，如某 IDE 的 bash 工具自动给 git commit 附加标记参数。C、D 恰是正确做法。"},{"id":"c4-09","module":"第4章 工具","type":"single","stem":"协作工具的三组原语分别是下列哪一项？","options":[{"id":"A","text":"启动与取消、消息传递、发现"},{"id":"B","text":"读取、写入、删除"},{"id":"C","text":"注册、触发、回调"},{"id":"D","text":"工具、资源、提示模板"}],"answer":["A"],"explain":"协作工具的三组原语：启动与取消（spawn_subagent / cancel_subagent）、消息传递（send_message_to_subagent，子 Agent 可反向汇报）、发现（list_agents）。C 是事件触发的两个时刻；D 是 MCP 的三类原语。"},{"id":"c4-10","module":"第4章 工具","type":"single","stem":"关于 MCP 的传输层设计，下列哪项表述符合书中内容？","options":[{"id":"A","text":"只支持本机 stdio，远程调用必须自建私有协议"},{"id":"B","text":"支持本地 stdio 与远程 Streamable HTTP，早期的 SSE 方案已被弃用"},{"id":"C","text":"统一使用 SSE，Streamable HTTP 仅用于实验"},{"id":"D","text":"传输层由各家厂商自行定义，MCP 不作规定"}],"answer":["B"],"explain":"书中介绍 MCP 的关键设计决策包括标准化的工具描述格式、传输层的灵活性与资源与工具的分离；传输层支持本地 stdio 与远程 Streamable HTTP，早期的 SSE 方案已弃用。A 否定了远程传输能力；C 把已弃用方案当成标准；D 与 MCP 追求统一接入的目标相悖。"},{"id":"c4-11","module":"第4章 工具","type":"multiple","stem":"关于 MCP 服务器的风险，书中的归纳包括下列哪些？","options":[{"id":"A","text":"工具描述投毒：恶意描述夹带指令，本质是提示注入的变种"},{"id":"B","text":"恶意或被劫持的服务器，属于供应链攻击"},{"id":"C","text":"同名工具遮蔽（tool shadowing）"},{"id":"D","text":"服务器只能本地运行，导致无法跨平台复用"}],"answer":["A","B","C"],"explain":"MCP 服务器的三类风险：工具描述投毒，注入载体从用户输入换成工具定义本身；恶意或被劫持的服务器，即供应链攻击；同名工具遮蔽（tool shadowing）。D 与事实相反，MCP 支持本地 stdio 与远程 Streamable HTTP。"},{"id":"c4-12","module":"第4章 工具","type":"judge","stem":"由于 Skill 本质上只是文档，其安全风险在任何情况下都低于 MCP 服务器。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"书中强调 Skill 与 MCP 的风险对比不是无条件排序：带脚本的 Skill 比只暴露工具描述的远程 MCP 服务器多出一整类风险，可插入恶意代码、遭受供应链攻击、运行时下载恶意代码；本地 MCP 服务器本身是以客户端权限运行的程序。两者都应按来源、执行位置与权限范围评估。"},{"id":"c4-13","module":"第4章 工具","type":"single","stem":"关于工具数量与选择正确性的关系，书中给出的结论是什么？","options":[{"id":"A","text":"工具数量不影响正确性，只影响 token 开销"},{"id":"B","text":"工具数量超过一百个时，即使最先进的大语言模型也容易在工具选择上出错"},{"id":"C","text":"工具数量越多，模型的选择准确率越高"},{"id":"D","text":"只有开源模型会在工具数量增加时出错"}],"answer":["B"],"explain":"书中指出规模本身就会伤害正确性：工具数量超过一百个时，即使最先进的大语言模型也容易在工具选择上出错；而且全部平铺还会占大量 token，并让每次工具集变动击穿 KV Cache。A 忽略了正确性代价；C 与规模伤害正确性的结论相反；D 与书中「最先进的大语言模型」这一表述不符。"},{"id":"c4-14","module":"第4章 工具","type":"single","stem":"MCP-Zero 采用的主动工具发现机制，与在会话开始时全量注入工具定义相比，其做法与效果是下列哪一项？","options":[{"id":"A","text":"系统提示词中不预置任何工具 schema，Agent 在思考中生成结构化请求块，经服务器级到工具级的两层语义路由匹配注入，论文报告在约 2800 个工具上比全量注入节省约 98% 的 token"},{"id":"B","text":"把全部工具定义一次性写入系统提示词，依靠 KV Cache 降低开销"},{"id":"C","text":"把工具定义按固定顺序排列，以减少缓存失效"},{"id":"D","text":"只用名称索引替代全部工具定义，不做任何语义匹配"}],"answer":["A"],"explain":"MCP-Zero 是主动工具发现的代表：系统提示词不预置任何工具 schema，Agent 在思考中生成结构化请求块，系统经服务器级到工具级的两层语义路由匹配注入，论文报告在约 2800 个工具上比全量注入节省约 98% 的 token。B 正是它要替代的做法。"},{"id":"c4-15","module":"第4章 工具","type":"multiple","stem":"关于感知工具的设计，下列说法符合书中内容的有哪些？","options":[{"id":"A","text":"设计关键是控制输出信息量，防止上下文爆炸"},{"id":"B","text":"搜索类工具应返回结构化的候选列表，并提供分页或游标参数，由 Agent 自主决定是否继续翻页"},{"id":"C","text":"读取类工具被截断时必须明确标示，因为静默截断是危险的"},{"id":"D","text":"只读工具结果稳定，其缓存键可以不包含用户身份与授权范围"}],"answer":["A","B","C"],"explain":"书中指出感知工具的设计关键是控制输出信息量、防止上下文爆炸，常在工具层集成上下文感知压缩；搜索类工具应返回标题、位置、摘要片段等结构化候选列表并支持分页或游标；读取类工具截断时必须明确标示，否则 Agent 会误以为看到了全部内容。D 错在缓存键仍需包含用户身份与授权范围。"},{"id":"c4-16","module":"第4章 工具","type":"judge","stem":"Python 虚拟环境（venv）可以隔离包依赖，但对文件系统、网络和进程没有任何安全约束，因此不能当作沙盒使用。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["T"],"explain":"Python 虚拟环境不是沙盒，它只隔离包依赖，对文件系统、网络和进程没有任何安全约束。真正的隔离按强度递增为进程级隔离、容器隔离（Docker 与宿主机共享内核，内核漏洞仍可能被利用逃逸）、microVM 或虚拟机。"},{"id":"c5-01","module":"第5章 Coding Agent 与通用 Agent","type":"single","stem":"教材认为，构建一个通用 Agent 的核心架构可以概括为下列哪一项组合？","options":[{"id":"A","text":"一个 Coding Agent（能自主编写、修改和执行代码的 Agent）加上文件系统"},{"id":"B","text":"一个 Deep Research Agent 加上向量数据库"},{"id":"C","text":"一个 Computer Use Agent 加上虚拟浏览器"},{"id":"D","text":"一个多 Agent 协作系统加上消息总线"}],"answer":["A"],"explain":"教材指出通用 Agent 的核心架构是「一个 Coding Agent（能自主编写、修改和执行代码的 Agent）加上文件系统」，代码生成是能创造其他能力的元能力（meta-capability）。Deep Research 的迭代搜索、Computer Use 的视觉操作各有其观察与动作空间，但都不是该架构中枢；多 Agent 协作属于协作拓扑问题，不是单 Agent 的核心架构。"},{"id":"c5-02","module":"第5章 Coding Agent 与通用 Agent","type":"single","stem":"一个基础 Coding Agent 的七个核心工具中，用于「搜索文件内容」的是哪一个？","options":[{"id":"A","text":"Glob（按文件名模式匹配）"},{"id":"B","text":"Grep（正则内容匹配）"},{"id":"C","text":"Bash Shell（命令行终端）"},{"id":"D","text":"Code Interpreter（代码解释器）"}],"answer":["B"],"explain":"七个核心工具中，Glob 负责文件名模式匹配，是探索项目结构的第一步；Grep/ripgrep 负责正则表达式内容匹配，二者常被混淆。Bash Shell 是通用执行入口，Code Interpreter 是隔离沙盒中的代码执行环境，都不承担内容检索职责。教材强调正则内容匹配的根本局限是只能找到字面匹配、无法理解语义。"},{"id":"c5-03","module":"第5章 Coding Agent 与通用 Agent","type":"single","stem":"教材主张把 Agent 记忆以 Markdown 文件保存，而不是放进向量数据库，核心理由是？","options":[{"id":"A","text":"文件读取速度比向量检索更快"},{"id":"B","text":"用户可直接打开文件阅读和修改 Agent 的记忆，且天然保留时间顺序、可用 Git 版本控制"},{"id":"C","text":"Markdown 能自动完成跨文档的多跳关系推理"},{"id":"D","text":"向量数据库无法保存中文内容"}],"answer":["B"],"explain":"教材认为选 Markdown 是为了让用户直接打开文件阅读和修改记忆——Agent 记错某件事时删掉那一行即可——同时天然保留时间顺序、避免语义检索中的时间混淆，并能用 Git 版本控制回滚。A 与事实相反，向量检索通常更快；C 的多跳推理是知识图谱的能力；D 明显不成立。"},{"id":"c5-04","module":"第5章 Coding Agent 与通用 Agent","type":"single","stem":"关于 CLAUDE.md、AGENTS.md、.cursorrules 这类「项目指令文件」，教材对其定位的描述是？","options":[{"id":"A","text":"面向人类读者的项目说明，功能等同于 README"},{"id":"B","text":"项目级的系统提示词，承载面向 Agent 的行为约定，会话开始时被自动注入上下文"},{"id":"C","text":"Agent 运行产生的临时日志，任务结束后自动删除"},{"id":"D","text":"用于替代代码仓库中的测试套件"}],"answer":["B"],"explain":"教材指出项目指令文件已成为业界事实标准，在每次会话开始时被自动注入上下文，相当于项目级的系统提示词；它与面向人类读者的 README 不同，承载构建与测试命令、代码风格、明确的禁区等面向 Agent 的行为约定。A 混淆了两者定位，C、D 与教材所述用途不符。"},{"id":"c5-05","module":"第5章 Coding Agent 与通用 Agent","type":"single","stem":"教材强调 Coding Agent 应把下列哪一项作为「完成」的判定标准？","options":[{"id":"A","text":"代码写完并保存"},{"id":"B","text":"代码审查通过"},{"id":"C","text":"测试通过"},{"id":"D","text":"设计文档写好"}],"answer":["C"],"explain":"教材指出把「测试通过」而不是「代码写完」定义为完成标准，正是 Loop 工程「由验证判定何时可以停」原则在编码场景的落地，并警示 Coding Agent 最常见的偷懒方式就是写完代码不跑测试便报告任务完成。A 正属于这种偷懒，B、D 只是流程环节而非停止判据。"},{"id":"c5-06","module":"第5章 Coding Agent 与通用 Agent","type":"single","stem":"教材用「任务清晰度 × 验证自动化」划分四象限，其中「目标模糊但结果可自动验证」对应的问题是？","options":[{"id":"A","text":"最佳区域，可高效产出正确结果"},{"id":"B","text":"吞吐量受限，需要人工验证"},{"id":"C","text":"高效地跑偏"},{"id":"D","text":"难以启动"}],"answer":["C"],"explain":"四象限中，目标明确且可自动验证是最佳区域（修复带测试用例的 bug）；目标明确但需人工验证则吞吐量受限（代码重构）；目标模糊但可自动验证会「高效地跑偏」，例如用 linter 去优化「代码质量」；两者都缺则难以启动。A、B、D 分别对应其余三种情形。"},{"id":"c5-07","module":"第5章 Coding Agent 与通用 Agent","type":"single","stem":"教材总结 Coding Agent 业界实践时提出的「约束优先于指导」，其含义是？","options":[{"id":"A","text":"先写详细设计文档，再动手写代码"},{"id":"B","text":"「做不了」的硬约束优先于「建议别做」的软指导"},{"id":"C","text":"用能力更强的模型替代能力较弱的模型"},{"id":"D","text":"把约束写进文档，而不是编码进 Linter 和 CI"}],"answer":["B"],"explain":"教材把「约束优先于指导」解释为前者是「做不了」、后者只是「建议别做」，并强调知识必须存在于代码库本身、约束应编码进 Linter 和 CI 而非写在文档里，验证要全链路自动化，因为人工审查是不可扩展的瓶颈。D 与教材主张相反，A、C 与该原则无关。"},{"id":"c5-08","module":"第5章 Coding Agent 与通用 Agent","type":"single","stem":"教材把 Coding Agent 的故障分为 API 层、工具层、上下文层、控制流层四层，「限流（HTTP 429）、服务过载、请求超时、输出触顶被截断」属于哪一层？","options":[{"id":"A","text":"API 层"},{"id":"B","text":"工具层"},{"id":"C","text":"上下文层"},{"id":"D","text":"控制流层"}],"answer":["A"],"explain":"四层故障中，API 层包含限流 429、服务过载、请求超时、连接中断以及输出触顶被截断；工具层是幻觉调用、参数畸形与执行抛异常，其中最危险的是工具反复返回同一错误而模型不加改变地重试；上下文层是窗口溢出与轨迹结构损坏；控制流层是死循环与死亡螺旋。"},{"id":"c5-09","module":"第5章 Coding Agent 与通用 Agent","type":"single","stem":"借鉴 Simon Willison 的「致命三要素」，教材补充的第四个维度被称为「攻击的放大器」，它是？","options":[{"id":"A","text":"具备多模态视觉能力"},{"id":"B","text":"拥有持久记忆"},{"id":"C","text":"使用开源基座模型"},{"id":"D","text":"支持并行工具调用"}],"answer":["B"],"explain":"致命三要素是访问私有数据、暴露于不受信任内容、具备外部通信能力；教材补充的第四维度是持久记忆，它并非并列的必要条件，而是攻击的放大器——攻击者可把恶意指令写入长期记忆跨会话潜伏，把一次性攻击升级为长期威胁。A、C、D 均不在教材所列维度之内。"},{"id":"c5-10","module":"第5章 Coding Agent 与通用 Agent","type":"multiple","stem":"教材把「代码作为元能力」按作用对象由内向外分为六个方向，下列属于其中之列的有？","options":[{"id":"A","text":"思维本身（思考工具）"},{"id":"B","text":"业务规则（约束）"},{"id":"C","text":"用户界面（生成式 UI）"},{"id":"D","text":"网络带宽（传输加速）"}],"answer":["A","B","C"],"explain":"六个方向是思维本身（思考工具）、业务规则（约束）、内容呈现（多媒体生成）、系统接口（适配器）、用户界面（生成式 UI）以及 Agent 自身（自举）。D 不在其列。以思考工具为例，分工是让 LLM 负责理解问题并写出代码，再由代码解释器负责精确计算，以弥补模型思考的概率性、近似性。"},{"id":"c5-11","module":"第5章 Coding Agent 与通用 Agent","type":"multiple","stem":"教材介绍的五种文件编辑方案中，包含下列哪些？","options":[{"id":"A","text":"旧字符串到新字符串（Old String → New String）"},{"id":"B","text":"行号定位"},{"id":"C","text":"类 Vim 编辑命令"},{"id":"D","text":"按嵌入向量相似度定位后替换"}],"answer":["A","B","C"],"explain":"五种方案是差异描述加 Apply Model、旧字符串到新字符串、行号定位、类 Vim 编辑命令与字符串首尾匹配。Claude Code、Codex 等采用旧字符串到新字符串，old string 在文件中存在且唯一才成功，不存在模棱两可；行号定位精确无歧义，但每次编辑后后续行号都会变化。D 不属于教材所列方案。"},{"id":"c5-12","module":"第5章 Coding Agent 与通用 Agent","type":"multiple","stem":"教材提出的 Coding Agent 安全防线包含下列哪些部分？","options":[{"id":"A","text":"隔离兜底（网络出口控制、文件系统隔离范围、资源限额与超时）"},{"id":"B","text":"执行期防御（命令的语义解析、推测性执行）"},{"id":"C","text":"信任与忠诚（多方委托下的忠诚度、信任边界下移到数据层）"},{"id":"D","text":"主要依赖模型的自我审查与自我拒绝"}],"answer":["A","B","C"],"explain":"安全防线由隔离兜底、执行期防御、信任与忠诚三部分组成，其中网络出口控制是最容易被忽视却最关键的一项——即使提示注入成功、恶意代码在沙盒内读到敏感数据，没有出口也传不出去。D 与教材「自审不可靠」的判断冲突，工具风险复核必须由上下文之外的机制完成。"},{"id":"c5-13","module":"第5章 Coding Agent 与通用 Agent","type":"multiple","stem":"关于代码驱动的多媒体生成，下列论述与教材一致的有？","options":[{"id":"A","text":"PPT 生成采用 Proposer-Reviewer 机制，Reviewer 把每页渲染为图片并用 Vision LLM 生成结构化改进建议"},{"id":"B","text":"双 Agent 分工的核心优势在于上下文管理，Reviewer 每次只处理最新版本的渲染图，不受历史版本干扰"},{"id":"C","text":"视频编辑采用粗粒度定位与精细粒度定位两步策略，并把视频分析封装为子 Agent 以避免占用主 Agent 上下文"},{"id":"D","text":"该机制的结构化终止条件只有「用户手动点击停止」一种"}],"answer":["A","B","C"],"explain":"教材指出 PPT 生成采用 Proposer-Reviewer，Reviewer 渲染每页为图片、经 Vision LLM 产出结构化改进建议，迭代到质量达标或达到最大迭代次数（如 5 轮）；质量达标与最大迭代次数正是 Loop 工程要求的两类显式终止条件，故 D 错误。双 Agent 分工的核心优势确实在于上下文管理。"},{"id":"c5-14","module":"第5章 Coding Agent 与通用 Agent","type":"judge","stem":"判断：项目指令文件的内容不随任务变化，是上下文工程意义上最经济的稳定前缀，因而天然对 KV Cache 友好。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["T"],"explain":"正确。教材指出从上下文工程看，项目指令文件是最经济的稳定前缀——内容不随任务变化，天然对 KV Cache 友好。这与「系统提示词和工具定义一旦确定就不要改」的原则一致，动态信息应追加到上下文末尾，以免从变动点起击穿前缀缓存。"},{"id":"c5-15","module":"第5章 Coding Agent 与通用 Agent","type":"judge","stem":"判断：A2UI（Agent-to-User Interface）是配套的事件/传输协议，而 AG-UI 才是让 Agent 输出界面描述的声明式界面协议。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"错误，二者被说反。教材明确 A2UI 是声明式界面协议，Agent 只输出 JSON 格式的界面描述清单，由客户端用预先准备的安全组件渲染；AG-UI（由 CopilotKit 提出）不是界面描述语言，而是配套的事件/传输协议，二者互补而非同类。"},{"id":"c5-16","module":"第5章 Coding Agent 与通用 Agent","type":"judge","stem":"判断：跨厂商接管时，能带走的是可读的思考文字，带不走的是产生这些思考的厂商凭证，因此轨迹应以中立格式存储。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["T"],"explain":"正确。教材指出思考由可读文字与厂商凭证两部分构成，跨厂商接管能带走的是文字、带不走的是凭证，且「把思考删干净就安全了」这条看似稳妥的策略在某些厂商反而通不过。因此轨迹不该按任何一家的接口格式存储，而应保存为中立格式，把每段思考拆成可移植文字与不可移植凭证。"},{"id":"c6-01","module":"第6章 交互：观察与动作空间的扩展","type":"single","stem":"教材关于交互时机的核心论断是？","options":[{"id":"A","text":"回合制是环境固有的性质，无法被打破"},{"id":"B","text":"回合制是模型与接口的一种交互约定，不是环境的性质"},{"id":"C","text":"只有语音 Agent 才需要摆脱回合制"},{"id":"D","text":"回合制只在 Computer Use 场景中需要被打破"}],"answer":["B"],"explain":"教材强调「回合制是模型与接口的一种交互约定，不是环境的性质」：真实环境不会等模型作出反应，邮件会在它思考时到达、用户会在它说到一半时插话、页面会在两次截图之间变样。因此需要按模态与触发时机两个方向扩展观察与动作空间。A、C、D 都把它误当成环境固有属性或个别场景问题。"},{"id":"c6-02","module":"第6章 交互：观察与动作空间的扩展","type":"single","stem":"OpenClaw 的内置事件驱动机制中，真正让 Agent 在没有用户消息时「自己动起来」的是哪两种？","options":[{"id":"A","text":"Hooks 与 Cron"},{"id":"B","text":"Cron 与 Heartbeat"},{"id":"C","text":"Hooks 与 Heartbeat"},{"id":"D","text":"Hooks、Cron 与 Heartbeat 三者都算"}],"answer":["B"],"explain":"OpenClaw 的三种内置机制是 Hooks（事件钩子，响应会话创建或重置等生命周期事件）、Cron（定时调度器，按 cron 表达式运行）与 Heartbeat（心跳守护进程，每隔 N 分钟唤醒）。其中 Cron 与 Heartbeat 都是时间驱动、能让 Agent 在没有用户消息时自行启动；Hooks 的事件来源是框架内部而非外部。"},{"id":"c6-03","module":"第6章 交互：观察与动作空间的扩展","type":"single","stem":"Pine AI 的 OpenClaw 插件 PineClaw 引入 Channel 机制在 Gateway 与 Pine API 之间建立实时事件通道，由此得出的结论是？","options":[{"id":"A","text":"只要 Agent 能定时检查事件，就足以实现主动服务"},{"id":"B","text":"真正的「主动服务」不仅需要 Agent 能定时检查事件，更需要事件能主动通知 Agent"},{"id":"C","text":"主动服务应当完全取消定时轮询"},{"id":"D","text":"事件驱动机制只适用于电话客服场景"}],"answer":["B"],"explain":"教材用 PineClaw 的例子说明：仅有 Cron/Heartbeat 这类定时检查，对第三方事件源只能等到下一个周期才可能察觉；真正的主动服务不仅需要 Agent 能定时检查事件，更需要事件能主动通知 Agent。A 正是被否定的做法，C、D 把结论过度推广。"},{"id":"c6-04","module":"第6章 交互：观察与动作空间的扩展","type":"single","stem":"教材给出三种事件处理策略，其中「用于紧急事件、本质是为紧急事件提前制造一个安全点」的是？","options":[{"id":"A","text":"取消式（Cancellation-Based）"},{"id":"B","text":"队列式（Queued）"},{"id":"C","text":"并行（Parallel）"},{"id":"D","text":"轮询式（Polling）"}],"answer":["A"],"explain":"取消式用于紧急事件，四步是停止当前操作、清空待处理队列、把队列事件与紧急事件一起追加到轨迹末尾、立即重新调用 LLM，本质是提前制造一个安全点；队列式用于常规事件，批量追加实现批处理；并行用于与主任务无关、执行成本低的独立轻量查询。D 不在三种策略之列。"},{"id":"c6-05","module":"第6章 交互：观察与动作空间的扩展","type":"single","stem":"关于语音交互范式，教材认为只有哪一种把「该谁说话」变成模型的持续决策？","options":[{"id":"A","text":"级联流水线（Cascading）"},{"id":"B","text":"端到端全模态（Omni）"},{"id":"C","text":"全双工交互模型"},{"id":"D","text":"轮次式（VAD 驱动）"}],"answer":["C"],"explain":"教材指出级联流水线与 Omni 都仍假设轮流说话：前者靠 VAD 划分发言权，后者通常也要靠 VAD，用户报数字时的中途停顿仍可能被误判为说完；只有全双工交互模型不再预设轮次，持续听、持续说并不断决定继续、停顿、打断或调用工具，把「该谁说话」变成模型的持续决策。"},{"id":"c6-06","module":"第6章 交互：观察与动作空间的扩展","type":"single","stem":"在 Computer Use 的视觉定位（Grounding）中，Set-of-Mark（SoM）的特点是？","options":[{"id":"A","text":"依赖 DOM 与无障碍树，只能在浏览器中使用"},{"id":"B","text":"由微软研究院于 2023 年提出，是纯视觉方法，用分割模型切出候选区域并叠加编号，原生桌面软件和游戏界面同样适用"},{"id":"C","text":"由模型直接预测像素坐标，不需要任何标注"},{"id":"D","text":"把界面元素转成 JSON 结构后逐个匹配"}],"answer":["B"],"explain":"教材指出 Set-of-Mark 由微软研究院于 2023 年提出，最初为释放 GPT-4V 的视觉定位能力，是纯视觉方法——用 SAM、SEEM 等分割模型切出候选区域并叠加编号，不需要 DOM，因此原生桌面软件和游戏界面同样适用。A 描述的是结构化元素索引，C 是纯坐标预测，D 与 SoM 无关。"},{"id":"c6-07","module":"第6章 交互：观察与动作空间的扩展","type":"single","stem":"关于 Computer Use 纯坐标预测的分辨率依赖，教材给出的正确做法是？","options":[{"id":"A","text":"直接把截图缩放到固定尺寸，无需考虑宽高比"},{"id":"B","text":"实现双向坐标缩放，并按宽高比选择目标分辨率，避免非等比拉伸把坐标判断带偏"},{"id":"C","text":"分辨率越低模型定位越准，应统一降到最低"},{"id":"D","text":"只需在训练分辨率上运行，模型会自动适配其他分辨率"}],"answer":["B"],"explain":"教材指出纯坐标预测对分辨率高度依赖：Claude 训练使用 XGA（1024×768）、WXGA（1280×800）、FWXGA（1366×768），需实现双向坐标缩放，并「按宽高比选目标分辨率」，避免非等比拉伸把坐标判断带偏——例如 2560×1440 应选 FWXGA，模型输出 (683,384) 可反算回真实 (1280,720)。"},{"id":"c6-08","module":"第6章 交互：观察与动作空间的扩展","type":"single","stem":"关于机器人的动作分块（action chunking），教材的判断是？","options":[{"id":"A","text":"是没有代价的纯加速手段"},{"id":"B","text":"是在平滑性与反应速度之间做取舍"},{"id":"C","text":"只能用于双臂机器人"},{"id":"D","text":"会彻底消除模型看到新画面的需要"}],"answer":["B"],"explain":"动作分块让模型一次生成一小段未来动作、控制线程按较高频率执行，把推理等待藏在动作执行时间里；但动作段越长运动越平滑，模型在这段时间里看到的新画面却越少，因此是「在平滑性和反应速度之间做取舍，而不是没有代价的加速」。A、D 抹去了这一代价，C 曲解了适用范围。"},{"id":"c6-09","module":"第6章 交互：观察与动作空间的扩展","type":"single","stem":"教材用一句话区分工具调用与 VLA（视觉—语言—动作模型）的分工，它是？","options":[{"id":"A","text":"工具调用定义期望的状态变化，VLA 定义如何通过连续动作实现这个状态变化"},{"id":"B","text":"工具调用输出关节角，VLA 输出自然语言指令"},{"id":"C","text":"工具调用属于感知，VLA 属于规划"},{"id":"D","text":"工具调用与 VLA 是同一事物的两种叫法"}],"answer":["A"],"explain":"教材指出 VLA 解决「当前观察 + 技能指令 → 动作」，而「工具调用定义的是期望的状态变化，VLA 定义的是如何通过连续动作实现这个状态变化」。工程原则是把任务顺序和眼前动作分开，模型不应直接输出任意关节角，只选择 pick、place、verify_state、stop 等有边界的技能。B、C、D 都与该分工不符。"},{"id":"c6-10","module":"第6章 交互：观察与动作空间的扩展","type":"multiple","stem":"教材指出异步要支撑三项核心能力，下列属于其中之列的有？","options":[{"id":"A","text":"异步执行是常态"},{"id":"B","text":"事件优先级的动态判断"},{"id":"C","text":"中断和恢复的流畅性"},{"id":"D","text":"永远按先来先服务顺序处理消息"}],"answer":["A","B","C"],"explain":"教材用「只会排队的柜台」与「灵活的秘书」比喻同步与异步，指出异步要支撑三项核心能力：异步执行是常态、事件优先级的动态判断、中断和恢复的流畅性。D 恰恰是同步式「排队」的做法，与异步所需的事件优先级判断相冲突。"},{"id":"c6-11","module":"第6章 交互：观察与动作空间的扩展","type":"multiple","stem":"教材用三种范式概括语音交互，下列属于这三种范式的有？","options":[{"id":"A","text":"级联流水线（Cascading）"},{"id":"B","text":"端到端全模态（Omni）"},{"id":"C","text":"全双工交互模型"},{"id":"D","text":"纯文本转写后离线批处理"}],"answer":["A","B","C"],"explain":"教材用「级联、轮次式、全双工」概括三种交互范式：级联流水线为 VAD→ASR→LLM→TTS，模块清晰但延迟累积且副语言信息在接口处丢失；端到端全模态由同一模型直接听音频并生成回复与语音；全双工不再预设轮次。贯穿三者的主线是如何摆脱「轮流说话」和 VAD 对发言权的猜测。D 不属于其中任何一种。"},{"id":"c6-12","module":"第6章 交互：观察与动作空间的扩展","type":"multiple","stem":"Anthropic 的 Computer Use 参考实现把动作空间分成三类工具，包含下列哪些？","options":[{"id":"A","text":"GUI 操作工具（含 mouse_move、点击、滚动、输入、按键与截图）"},{"id":"B","text":"命令执行工具（bash tool，持久会话、120 秒超时、用哨兵字符串检测完成）"},{"id":"C","text":"文件编辑工具（str_replace_editor，用字符串匹配实现安全编辑并支持撤销）"},{"id":"D","text":"模型权重更新工具"}],"answer":["A","B","C"],"explain":"参考实现的三类工具是 GUI 操作工具（鼠标移动、左右中键点击、双击/三击、拖拽、四方向滚动、逐字符输入、组合键、截图、等待等）、命令执行工具（持久会话、120 秒超时、用哨兵字符串检测完成、调用间保持环境状态）与文件编辑工具（str_replace_editor，字符串匹配实现安全编辑并支持撤销）。D 不属于 Computer Use 的动作空间。"},{"id":"c6-13","module":"第6章 交互：观察与动作空间的扩展","type":"multiple","stem":"实验对照的三种机器人闭环策略包含下列哪些？","options":[{"id":"A","text":"开环执行（一次生成完整动作序列，中途不重新观察）"},{"id":"B","text":"逐步检查（每个 pick/place 后重新读取状态，失败只重试当前技能）"},{"id":"C","text":"预测式执行（增加短期世界模型为候选技能排序）"},{"id":"D","text":"只依赖离线仿真，不做任何在线观察"}],"answer":["A","B","C"],"explain":"三种闭环策略是开环执行、逐步检查与预测式执行：开环会把一次局部失败带到任务末尾；逐步检查每个 pick/place 后重新读取状态，失败只重试当前技能，因而能够恢复；预测式执行再用短期世界模型为候选技能排序。D 与教材「最终是否完成，仍必须由新的观察来判定」的判断相悖。"},{"id":"c6-14","module":"第6章 交互：观察与动作空间的扩展","type":"judge","stem":"判断：解耦的快慢思考分离架构并不天然落后于端到端模型，采用该架构的 Pine AI 语音 Agent 曾在 τ³-Voice Leaderboard 上取得第一名。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["T"],"explain":"正确。教材指出快慢分离能直接承接慢模型的迭代红利，只需替换后台模型而不必重新训练整套实时语音系统；截至 2026 年 8 月，采用快慢思考分离架构的 Pine AI 语音 Agent 在 τ³-Voice Leaderboard 上取得第一名，超过 Grok Voice 与 GPT-Realtime-2，说明解耦架构并不天然落后于端到端模型。"},{"id":"c6-15","module":"第6章 交互：观察与动作空间的扩展","type":"judge","stem":"判断：端到端全模态（Omni）模型已经不再预设轮次，其发言权完全由模型持续决策，不再需要 VAD。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"错误。教材指出 Omni 是同一模型直接听音频、生成回复并输出语音，优势在延迟与非文字信息，但它仍假设轮流说话，通常要靠 VAD 划分发言权，用户报数字时的中途停顿仍可能被误判为说完；只有全双工交互模型才不再预设轮次，把「该谁说话」变成模型的持续决策。"},{"id":"c6-16","module":"第6章 交互：观察与动作空间的扩展","type":"judge","stem":"判断：OSWorld-Human 的效率研究表明，Agent 的准确率达到人类水平并不等于已经足够实用。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["T"],"explain":"正确。教材引用 OSWorld-Human 的效率研究指出，即使任务最终成功，Agent 的操作步骤仍明显多于人类、等待时间更长，因此「准确率达到人类水平，并不等于已经足够实用」。教材小结也强调 Computer Use 的瓶颈已从能否完成任务扩展到操作效率、连续视觉理解与动作后的状态确认。"},{"id":"c7-01","module":"第7章 Agent 的评估","type":"single","stem":"教材认为 Agent 评估的对象应当是？","options":[{"id":"A","text":"只评估底层大模型"},{"id":"B","text":"模型与 Harness 的组合体"},{"id":"C","text":"只评估 Harness 的代码质量"},{"id":"D","text":"只评估最终用户的主观满意度"}],"answer":["B"],"explain":"教材指出评估的对象不应只是模型，而应是模型与 Harness 的组合体，完善的评估体系应能区分「模型能力不足」与「Harness 设计缺陷」这两类本质不同的问题。A、C 各偏一端，D 只是若干信号之一，都无法定位问题究竟出在模型还是 Harness。"},{"id":"c7-02","module":"第7章 Agent 的评估","type":"single","stem":"教材区分了消融实验与模型替换实验（model swap），其中「换用更强模型后分数没有上涨」说明？","options":[{"id":"A","text":"模型能力不足是主要瓶颈"},{"id":"B","text":"瓶颈在 Harness"},{"id":"C","text":"评估集本身有泄漏"},{"id":"D","text":"评分标准过于宽松"}],"answer":["B"],"explain":"消融实验是逐一关闭 Harness 的某个组件看整体性能变化，定位 Harness 内部哪个部件重要；模型替换实验是固定 Harness 只换更强或更弱的模型，用于区分瓶颈在模型还是在 Harness——换强模型分数不涨说明瓶颈在 Harness，换弱模型分数大跌则说明当前表现主要由模型决定。A 与判据相反。"},{"id":"c7-03","module":"第7章 Agent 的评估","type":"single","stem":"τ²-bench 中一条任务由四个部分组成，下列哪一项不在其中？","options":[{"id":"A","text":"ticket"},{"id":"B","text":"user_scenario"},{"id":"C","text":"initial_state"},{"id":"D","text":"agent_reward_model"}],"answer":["D"],"explain":"四部分是 ticket（提供给 Agent 的工单）、user_scenario（提供给用户模拟器的行为规范）、initial_state（通过 initialization_actions 把两侧状态重置到同一起点）与 evaluation_criteria（评分标准）。D 不属于四部分；其评分由 reward_basis 聚合出二元结果，并不需要单独的奖励模型。"},{"id":"c7-04","module":"第7章 Agent 的评估","type":"single","stem":"教材对 Pass^k（读作 Pass consecutive k）的定义是？","options":[{"id":"A","text":"同一任务运行 k 次，只要至少一次通过即算通过"},{"id":"B","text":"同一任务连续运行 k 次，要求每一次都通过，且不能触发安全、合规或幻觉等一票否决项"},{"id":"C","text":"在 k 个不同任务上各运行一次的平均成功率"},{"id":"D","text":"输出为连续得分时取 k 次中最好的一次"}],"answer":["B"],"explain":"Pass^k 指同一任务连续运行 k 次、要求每一次都通过，且不能触发安全、合规或幻觉等一票否决项，回答的是「Agent 能否稳定可靠地交付」。A 是 Pass@k，D 是 Best@k（输出为连续得分时取最好一次）。二者关系为 Pass@k=1-(1-p)^k、Pass^k=p^k，p=0.6、k=5 时前者约 99.0%、后者仅约 7.8%。"},{"id":"c7-05","module":"第7章 Agent 的评估","type":"single","stem":"一个可重复运行的评估环境包含五个组成要素，下列哪一项不在其中？","options":[{"id":"A","text":"数据集（Dataset）"},{"id":"B","text":"环境状态（Environment State）"},{"id":"C","text":"工具接口（Tools）"},{"id":"D","text":"模型训练损失曲线"}],"answer":["D"],"explain":"五要素是数据集、环境状态（必须可重置，initialization_actions 即重置脚本）、工具接口、评分标准（Rubric）与执行协议（Interaction Protocol），缺其一便无法构成可重复的循环。D 属于训练过程指标，与评估环境能否重复运行无关。"},{"id":"c7-06","module":"第7章 Agent 的评估","type":"single","stem":"SWE-bench Verified 用双重验证判断一次修复是否成功，二者分别是？","options":[{"id":"A","text":"FAIL_TO_PASS 与 PASS_TO_PASS"},{"id":"B","text":"Pass@k 与 Pass^k"},{"id":"C","text":"Precision 与 Recall"},{"id":"D","text":"recall@k 与 MRR"}],"answer":["A"],"explain":"FAIL_TO_PASS 指修复前失败、修复后通过，证明问题确已被解决；PASS_TO_PASS 指修复前后均通过，证明未引入新缺陷。教材强调只检验前者，Agent 可以通过删改妨碍通过的断言蒙混；只检验后者则等同于未作检验。B、C、D 都是评估指标口径，不是该基准的双重验证机制。"},{"id":"c7-07","module":"第7章 Agent 的评估","type":"single","stem":"在 τ²-bench 的任务设计中，如果缺少「事实锚定（Grounding）」会带来什么后果？","options":[{"id":"A","text":"用户模拟器无法被启动"},{"id":"B","text":"模拟用户会顺应 Agent 的引导确认问题已解决，评估随之退化为两个模型之间的相互确认"},{"id":"C","text":"评分标准会从二元变成连续"},{"id":"D","text":"Agent 将无法调用任何工具"}],"answer":["B"],"explain":"事实锚定要求关于设备状态的回答必须以工具返回结果为依据。教材指出缺少事实锚定时，模拟用户会顺应 Agent 的引导确认问题已解决，评估随之退化为两个模型之间的相互确认，失去验证价值。A、C、D 与事实锚定的作用无关。"},{"id":"c7-08","module":"第7章 Agent 的评估","type":"single","stem":"使用 LLM 评判做配对比较时，教材推荐用于缓解位置偏差（Position Bias）的标准方法是？","options":[{"id":"A","text":"始终把答案位置固定在前面"},{"id":"B","text":"交换顺序各评一次"},{"id":"C","text":"让被评的两个回答至少相差两倍长度"},{"id":"D","text":"统一使用更强的模型做单次评判"}],"answer":["B"],"explain":"LLM 评判存在位置偏差，标准缓解方法是交换顺序各评一次，更严格的做法是两次判决一致才计入，不一致则记为平局或送人工复核。C 恰好与应对长度偏差的做法相反——配对比较应先把两个候选长度控制到相近再评，而不是故意拉开长度。"},{"id":"c7-09","module":"第7章 Agent 的评估","type":"single","stem":"教材引用古德哈特定律（Goodhart's Law）用于说明？","options":[{"id":"A","text":"评估集越大结果越准确"},{"id":"B","text":"当一个度量指标变成优化目标时，它就不再是好的度量指标"},{"id":"C","text":"只要模型够强就不需要评估"},{"id":"D","text":"人工评估一定优于自动评估"}],"answer":["B"],"explain":"古德哈特定律指「当一个度量指标变成优化目标时，它就不再是好的度量指标」。教材用它解释 Agent 与评判模型来自同一家族时，模型会学会利用评判者的偏好和盲点；缓解策略是多源异构评判，例如 Agent 用 Claude 而评判用 GPT-5 与 Gemini，因为不同家族的偏见往往是正交的。"},{"id":"c7-10","module":"第7章 Agent 的评估","type":"multiple","stem":"教材把评估集的来源归纳为三类，下列属于其中的有？","options":[{"id":"A","text":"公开基准"},{"id":"B","text":"自建业务集"},{"id":"C","text":"生产轨迹回流"},{"id":"D","text":"模型参数中记忆的题目"}],"answer":["A","B","C"],"explain":"三类来源是公开基准（用于粗筛模型与借鉴设计手法，一般不用于产品决策）、自建业务集（覆盖真实任务分布，可支撑选型与 Harness 设计决策）与生产轨迹回流（来自线上真实失败用例，成本最高、准确性也最高）。教材指出在 GAIA 上提升两个百分点与退款成功率之间不存在必然关系，故 D 不成立。"},{"id":"c7-11","module":"第7章 Agent 的评估","type":"multiple","stem":"Verifiers 框架按「是否保持跨轮状态」与「是否需要隔离」把环境分成四类，下列描述正确的有？","options":[{"id":"A","text":"SingleTurnEnv：无状态、无工具，主要用于单轮问答或数学题"},{"id":"B","text":"ToolEnv：无状态、多轮工具，典型任务是搜索加信息综合"},{"id":"C","text":"StatefulToolEnv：有状态、多轮，可修改数据库记录"},{"id":"D","text":"SandboxEnv：有状态但不隔离，用于单轮问答"}],"answer":["A","B","C"],"explain":"四类环境是 SingleTurnEnv（无状态、无工具，单轮问答或数学题）、ToolEnv（无状态、多轮工具，搜索加信息综合）、StatefulToolEnv（有状态、多轮，如修改数据库记录）与 SandboxEnv（有状态且隔离，多轮，如代码执行与测试）。D 恰好把 SandboxEnv 的两个维度都说反了。"},{"id":"c7-12","module":"第7章 Agent 的评估","type":"multiple","stem":"对于「静默失败」，教材给出两种定位方法，它们是？","options":[{"id":"A","text":"事实锚点比对（把 Agent 的陈述与工具返回值逐步对齐，取首次背离）"},{"id":"B","text":"轨迹前缀二分（把轨迹截到第 k 步交给人接手，能救回来说明错误在 k 之后）"},{"id":"C","text":"在轨迹里搜索报错关键字"},{"id":"D","text":"只看最终得分是否为零"}],"answer":["A","B"],"explain":"教材给出事实锚点比对与轨迹前缀二分两种定位方法，并明确「不能用搜索报错关键字代替」。以 AndroidWorld T3A 案例为例，32 步全程没有任何一步返回错误，最后自行宣告完成，此时报错关键字搜不出任何东西，只能靠锚点比对与前缀二分找到首个错误步骤。"},{"id":"c7-13","module":"第7章 Agent 的评估","type":"multiple","stem":"关于 AB 测试方法论，下列符合教材主张的有？","options":[{"id":"A","text":"使用多臂而非二元，设计多个渐进式变体以揭示剂量-效应关系"},{"id":"B","text":"区分机制指标与目标指标，确认「我改变的东西」与「我真正关心的东西」是否一致"},{"id":"C","text":"设置护栏指标，明确不能变差的底线"},{"id":"D","text":"只比较最终单一目标指标，其余指标不必记录"}],"answer":["A","B","C"],"explain":"教材的 AB 测试方法论包含四条：多臂而非二元、区分机制指标与目标指标、设置护栏指标、记录基线统计。以缩短计划文件长度为例，它是机制指标，真正目标可能是降低会话级成本，缩短计划反而可能因不够详细导致更多编辑-检查-编辑循环。D 与「记录基线统计」的要求相悖。"},{"id":"c7-14","module":"第7章 Agent 的评估","type":"judge","stem":"判断：Pass@k 要求同一任务连续 k 次全部通过，Pass^k 则只要 k 次中至少一次通过即算通过。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"错误，二者含义被对调。Pass@k 是同一任务运行 k 次只要至少一次通过即算通过，衡量技术奇观与能力天花板；Pass^k 才要求连续 k 次每一次都通过且不触发一票否决项，回答 Agent 能否稳定可靠地交付。教材给出 Pass@k=1-(1-p)^k、Pass^k=p^k 的关系式。"},{"id":"c7-15","module":"第7章 Agent 的评估","type":"judge","stem":"判断：消融开关必须在启动路径极早期注入，因此必须从一开始就设计进系统架构，而非事后加装。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["T"],"explain":"正确。教材指出消融开关要在任何模块级常量捕获配置值之前注入，因此必须从一开始就设计进系统架构，而非事后加装；定期运行消融还能发现「特性债务」，即曾经有效但随模型进化已不再必要的特性，故建议每个主要特性都应可独立关闭并定期验证其实际贡献。"},{"id":"c7-16","module":"第7章 Agent 的评估","type":"judge","stem":"判断：100 个用例下，新模型成功率 73% 对旧模型 70%，这一差距已足以支持模型切换。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"错误。教材按标准误公式估算，100 个用例、成功率 70% 时 95% 置信区间约为 70%±9 个百分点，73% 与 70% 的差距完全淹没在噪声里。实务判断标准是分差要超过噪声、在配对分析（如 McNemar 检验或配对 bootstrap）中成立，并且能够复现。"},{"id":"c8-01","module":"第8章 模型后训练","type":"single","stem":"教材指出 SFT 与预训练在数学上是同一个任务，二者唯一实质性的工程区别是？","options":[{"id":"A","text":"使用的损失函数不同"},{"id":"B","text":"是否有损失屏蔽（loss masking），即只对回答部分回传梯度"},{"id":"C","text":"预训练不使用反向传播"},{"id":"D","text":"SFT 不需要任何训练数据"}],"answer":["B"],"explain":"教材指出两者都是预测下一个词、最小化同一个损失函数，只有两点差别：数据不同（原始互联网文本对人工精心准备的输入—输出对）与损失屏蔽——只对回答部分回传梯度，这是 SFT 在工程上与预训练唯一实质性的区别。A、C、D 都与教材表述冲突。"},{"id":"c8-02","module":"第8章 模型后训练","type":"single","stem":"Mid-training 主要解决的两类缺口是？","options":[{"id":"A","text":"知识缺口与基础能力缺口"},{"id":"B","text":"格式不规范与语气不统一"},{"id":"C","text":"探索不足与奖励稀疏"},{"id":"D","text":"并发冲突与信息泄露"}],"answer":["A"],"explain":"教材指出 Mid-training 从已有基础模型出发、继续预测下一个词并对全部 token 计算损失，主要解决知识缺口（目标语言、金融/医疗/法律领域、企业内部文档或某类代码库）与基础能力缺口（长上下文、代码模式、数学推导、跨模态表征）。B 属于 SFT 固化的协议性内容，C 属于 RL 的问题，D 是多 Agent 系统的失败模式。"},{"id":"c8-03","module":"第8章 模型后训练","type":"single","stem":"在决定上 RL 之前，教材要求先检查的两个前提是？","options":[{"id":"A","text":"模型参数量足够大、训练数据足够多"},{"id":"B","text":"格式支持与能力支持（在留出任务上 pass@k 非零）"},{"id":"C","text":"有足够的 GPU 显存、有无人工标注"},{"id":"D","text":"已做过 RAG、已做过提示工程"}],"answer":["B"],"explain":"上 RL 的两个前提是格式支持（输出能被解析，否则奖励函数连成功还是失败都判断不了，此时需先由 SFT 把话说利索）与能力支持（先在留出任务上测 pass@1 与 pass@k）。教材强调 RL 擅长把已有但概率较低的成功行为推高，不擅长从全零奖励中凭空创造模型从未学过的知识。"},{"id":"c8-04","module":"第8章 模型后训练","type":"single","stem":"关于 GRPO，教材指出的关键限制是？","options":[{"id":"A","text":"必须额外训练一个价值模型"},{"id":"B","text":"若一组 rollout 全部失败或全部成功，相对优势也会消失"},{"id":"C","text":"只能用于机器人操作任务"},{"id":"D","text":"不需要任何验证器"}],"answer":["B"],"explain":"GRPO 把同一份初始条件复制到多个隔离沙箱让模型独立求解，再由验证器给分并计算组内相对优势；教材指出若一组 rollout 全部失败或全部成功，组内优势就会消失，这正是 RLVP 的路径信号、过程奖励与部分进展奖励要解决的问题。A 与事实相反，不需要额外价值模型恰是 GRPO 相对 PPO 的特点。"},{"id":"c8-05","module":"第8章 模型后训练","type":"single","stem":"教材对 Online（在线）与 On-policy（在轨）区别的表述是？","options":[{"id":"A","text":"两者是同义词，可以互换使用"},{"id":"B","text":"Online 只表示数据在训练过程中不断通过与环境交互产生；On-policy 要求生成 rollout 的行为策略与当前要优化的策略相同或足够接近"},{"id":"C","text":"On-policy 要求数据必须离线收集"},{"id":"D","text":"只要代码使用了 asyncio，训练就是在轨的"}],"answer":["B"],"explain":"教材指出 Online 只表示数据在训练过程中不断通过与环境交互产生；On-policy 要求生成 rollout 的行为策略与当前要优化的策略相同或足够接近。异步集群即使持续在线生成，只要 rollout worker 落后了几个 checkpoint，数据就已经陈旧、训练在统计意义上带有 off-policy 成分。C、D 与该定义不符。"},{"id":"c8-06","module":"第8章 模型后训练","type":"single","stem":"关于结果奖励（ORM）与过程奖励（PRM），教材的判断是？","options":[{"id":"A","text":"ORM 在中间步骤提供反馈，PRM 只在结束时判断"},{"id":"B","text":"PRM 一定能取得比 ORM 更好的最终效果"},{"id":"C","text":"二者是「密集反馈换收敛速度、稀疏反馈换探索空间」的对照"},{"id":"D","text":"多步轨迹中 ORM 比 PRM 更容易定位具体错误"}],"answer":["C"],"explain":"ORM 只在 episode 结束时判断任务是否完成，最简单、给策略最大探索自由度，但稀疏反馈让模型难以判断多步轨迹中的具体错误；PRM 在中间步骤提供反馈，能缓解长时序信用分配，却可能把模型限制在设计者预设的路径上且标注成本更高。两者是密集反馈换收敛速度、稀疏反馈换探索空间的对照，故 A、B、D 错误。"},{"id":"c8-07","module":"第8章 模型后训练","type":"single","stem":"RLVP（Reinforcement Learning with Verified Penalty）的原则与实验结果是？","options":[{"id":"A","text":"奖励路径、惩罚结果，把违规次数降至 0"},{"id":"B","text":"奖励结果、惩罚路径，在 TerminalBench 上把违规次数由 3.71 降至 0.66 而成功率基本持平"},{"id":"C","text":"只惩罚「不够努力」的行为"},{"id":"D","text":"用生成式奖励模型替代确定性规则"}],"answer":["B"],"explain":"RLVP 的原则是「奖励结果，惩罚路径」，总奖励写成 R=O+βΦ，其中 O 是任务结果、Φ 是由确定性规则逐动作计算的路径信号。实验 8-16 显示 TerminalBench 上违规次数由 3.71 降至 0.66 而成功率基本持平。教材强调只惩罚具体动作、不惩罚「不够努力」，且结果奖励始终保留，避免模型学会什么都不做。"},{"id":"c8-08","module":"第8章 模型后训练","type":"single","stem":"在轨蒸馏（On-Policy Distillation）中，「policy」指的是？","options":[{"id":"A","text":"谁提供监督信号"},{"id":"B","text":"谁生成学生将要学习的状态前缀"},{"id":"C","text":"谁的参数量更大"},{"id":"D","text":"谁负责设计奖励函数"}],"answer":["B"],"explain":"教材明确指出，在轨蒸馏里的「policy」指谁生成学生将要学习的状态前缀，而不是指谁提供监督。它由当前学生采样、监督是教师在学生前缀上的逐 token 分布，核心概括是「学生决定走到哪里，教师负责在学生已经走到的位置告诉它下一步的完整概率分布」，达到同等性能所需训练步数约为纯 RL 的 1/10。"},{"id":"c8-09","module":"第8章 模型后训练","type":"single","stem":"关于 LoRA 的工程经验，教材的建议是？","options":[{"id":"A","text":"只需加在注意力层即可，参数量约占原始 1%–5%"},{"id":"B","text":"必须应用到所有主要权重矩阵（尤其参数占比最大的 MLP 层），最优学习率约是全参微调的 10 倍"},{"id":"C","text":"SFT 与 RL 都应使用相同的较小 rank"},{"id":"D","text":"LoRA 会显著提高灾难性遗忘风险"}],"answer":["B"],"explain":"教材指出 LoRA 参数量仅占原始的 1%–5%，因原权重被冻结而灾难性遗忘风险更低；必须把 LoRA 应用到所有主要权重矩阵（尤其参数占比最大的 MLP 层），只加在注意力层会掉点，最优学习率约是全参微调的 10 倍。SFT 用中高 rank（64–256），RL 用小 rank（8–32），故 A、C、D 错误。"},{"id":"c8-10","module":"第8章 模型后训练","type":"multiple","stem":"教材列出的强化学习五个核心要素包含下列哪些？","options":[{"id":"A","text":"动作空间与策略"},{"id":"B","text":"奖励信号与价值函数"},{"id":"C","text":"环境模型（可选，基于此分为基于模型与无模型方法）"},{"id":"D","text":"损失屏蔽（loss masking）"}],"answer":["A","B","C"],"explain":"强化学习的五个核心要素是动作空间、策略、奖励信号（目标是最大化长期而非即时奖励）、价值函数与环境模型（可选，基于它分为基于模型与无模型方法）。RL 区别于监督学习与无监督学习的两个特征是试错搜索与延迟奖励，由此带来探索与利用权衡。D 属于 SFT 的机制，不是 RL 要素。"},{"id":"c8-11","module":"第8章 模型后训练","type":"multiple","stem":"教材归纳的 SFT 数据三条来源包含下列哪些？","options":[{"id":"A","text":"人工专家示范"},{"id":"B","text":"教师模型生成（合成数据，过滤后蒸馏给学生）"},{"id":"C","text":"拒绝采样（模型采样多条候选，用验证器筛出正确样本再反过来训练自己）"},{"id":"D","text":"直接使用未经验证的线上失败轨迹"}],"answer":["A","B","C"],"explain":"三条来源是人工专家示范（质量天花板最高、贵且慢，适合做定义格式与风格的种子数据）、教师模型生成（合成数据，过滤后蒸馏给学生）与拒绝采样（又称拒绝采样微调 RFT，介于纯 SFT 与 RL 之间）。教材强调失败轨迹不应直接当作正确示范，可用来构造偏好对或补上诊断与修复后再加入训练，故 D 错误。"},{"id":"c8-12","module":"第8章 模型后训练","type":"multiple","stem":"关于奖励设计，下列符合教材主张的有？","options":[{"id":"A","text":"先用结果奖励建立可靠基线，再只为真正可验证的中间事件加入过程信号"},{"id":"B","text":"「过早结束」的判定必须交给模型写不了的隐藏测试、状态断言或外部终止钩子"},{"id":"C","text":"测试必须读取真实文件或环境状态，不能只检查模型是否说了「已完成」"},{"id":"D","text":"为了奖励更丰富，应尽量堆叠更多评价维度"}],"answer":["A","B","C"],"explain":"教材建议先用结果奖励建立可靠基线，再只为真正可验证的中间事件加入过程信号；「过早结束」的判定必须交给模型写不了的隐藏测试、状态断言或外部终止钩子，且测试要读取真实文件或环境状态，不能只检查模型是否声称完成。教材同时提醒不要为「奖励更丰富」而堆叠不可验证的维度，每增加一个维度就多一种被钻空子的可能，故 D 错误。"},{"id":"c8-13","module":"第8章 模型后训练","type":"multiple","stem":"关于 Mid-training、SFT 与 RL 的选择框架，下列符合教材表 8-4 的有？","options":[{"id":"A","text":"领域概念、语言或基础操作不会，合理采样下 pass@k 仍接近 0 → Mid-training（动态事实则用 RAG）"},{"id":"B","text":"偶尔能做对，但格式、工具 schema、语气或固定流程不稳定 → SFT 或约束解码"},{"id":"C","text":"已有非零成功率和可靠奖励，但好策略概率低、长程决策或 OOD 泛化不足 → RL"},{"id":"D","text":"无论什么情况，都应按 Mid-training → SFT → RL 的顺序完整走一遍"}],"answer":["A","B","C"],"explain":"表 8-4 的准则包括：领域概念/语言/基础操作不会且 pass@k 近零用 Mid-training（动态事实用 RAG）；偶尔能做对但格式、schema、语气或流程不稳定用 SFT 或约束解码；已有非零成功率和可靠奖励但好策略概率低用 RL。教材强调每一步都有可测的进入条件，不能把三者当作仪式化流水线，故 D 错误。"},{"id":"c8-14","module":"第8章 模型后训练","type":"judge","stem":"判断：「SFT 更容易记住示范、RL 表现出更好的泛化」是一条不受数据、模型、奖励与环境影响的普遍规律。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"错误。教材明确这是在其对照实验条件下测得的结果，不是普遍属性——数据足够多样、正则化得当时 SFT 也能泛化，奖励或环境有偏时 RL 也会过拟合。教材小结也把该表述限定为「受控实验中观察到的倾向」，并强调数据和环境比算法更重要。"},{"id":"c8-15","module":"第8章 模型后训练","type":"judge","stem":"判断：环境返回的 token 不是策略生成的，计算策略梯度时应屏蔽这些反馈 token。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["T"],"explain":"正确。教材在讨论工具调用 RL（如 ReTool、AWorld-train）时指出，环境返回的 token 不是策略生成的，计算策略梯度时应屏蔽这些反馈 token，否则模型会被训练去预测沙盒输出，而不是学会如何使用工具。这与 SFT 的损失屏蔽（loss masking）在思路上相通。"},{"id":"c8-16","module":"第8章 模型后训练","type":"judge","stem":"判断：当某任务在留出集上的 pass@k 接近 0 时，只要把 rollout 采样量放大，RL 就能高效地学会该能力。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"错误。教材指出若实测 pass@k 仍接近 0，GRPO 的一组 rollout 很可能全为 0、组内优势直接消失，PPO 也看不到「应该往哪里移动」的正向样本，放大采样量只能以约 1/p 的速度等待偶然成功。RL 擅长把已有但概率较低的成功行为推高，不擅长从全零奖励中凭空创造模型从未学过的知识。"},{"id":"c9-01","module":"第9章 Agent 的持续进化","type":"single","stem":"在三层轨迹验证结构中，教材认为最应优先建立的是哪一层？","options":[{"id":"A","text":"结果验证器，回答「事情是否真的办成」"},{"id":"B","text":"过程验证器，回答「是否以允许的方式办成」"},{"id":"C","text":"质量验证器，回答「是否让用户舒服」"},{"id":"D","text":"语义验证器，回答「措辞是否自然」"}],"answer":["A"],"explain":"结果验证器读取测试结果、数据库状态和工具返回，回答「事情是否真的办成」，是三层中最应优先建立的一层；过程验证器回答「是否以允许的方式办成」，质量验证器用 LLM-as-a-Judge 与 Rubric 回答「是否让用户舒服」。D 不是教材术语。"},{"id":"c9-02","module":"第9章 Agent 的持续进化","type":"single","stem":"教材用「删除失败的测试用例也能让测试通过」「口头承诺退款也可能得到暂时的满意反馈」来说明哪一层验证器的必要性？","options":[{"id":"A","text":"结果验证器"},{"id":"B","text":"过程验证器"},{"id":"C","text":"质量验证器"},{"id":"D","text":"不需要额外验证器"}],"answer":["B"],"explain":"这两个例子都说明结果或满意反馈可能被「走捷径」的方式伪造出来，因此需要过程验证器判断「是否以允许的方式办成」。结果验证器只看办没办成，质量验证器关注用户体验，都无法识别这类伪装。"},{"id":"c9-03","module":"第9章 Agent 的持续进化","type":"single","stem":"关于「持续进化」与「持续学习」的关系，符合教材表述的是？","options":[{"id":"A","text":"持续进化指在模型权重层面直接更新参数"},{"id":"B","text":"持续进化是在模型外围建立的可验证学习系统，待验证修改经回归测试与安全检查后才生效"},{"id":"C","text":"持续进化要求每次任务结束后立即训练模型参数"},{"id":"D","text":"持续进化等同于把轨迹存入长上下文或向量库"}],"answer":["B"],"explain":"持续学习指模型权重层面；持续进化是在模型外围建立的可验证学习系统：记录运行证据、验证结果与过程、从多条轨迹中提取共性，再决定更新知识、指令、程序还是参数。所有修改先形成待验证版本，经回归测试和安全检查后才生效，故 A、C、D 错误。"},{"id":"c9-04","module":"第9章 Agent 的持续进化","type":"single","stem":"四种更新方式中，适合承载「可确定解析、可执行验证和高风险硬约束」的是？","options":[{"id":"A","text":"经验知识库"},{"id":"B","text":"Prompt 与 Skill"},{"id":"C","text":"程序与 Harness"},{"id":"D","text":"模型参数"}],"answer":["C"],"explain":"程序与 Harness 适合可确定解析、可执行验证和高风险硬约束，优势是可测试、执行稳定、成本低，局限是开发与维护成本较高。经验知识库适合事实与例外，Prompt 与 Skill 适合能用自然语言说明的判断原则，模型参数适合高维感知与隐式策略。"},{"id":"c9-05","module":"第9章 Agent 的持续进化","type":"single","stem":"按照教材的路由原则，「需要理解语境、例外和优先级，但仍能用自然语言说明的判断原则」应写到哪个载体？","options":[{"id":"A","text":"经验知识库"},{"id":"B","text":"Prompt 与 Skill"},{"id":"C","text":"程序与 Harness 的权限门控"},{"id":"D","text":"模型参数"}],"answer":["B"],"explain":"路由原则是：事实进入知识库，解释例外的原则进入 Skill，不可绕过的权限仍由程序门控，高维识别能力再进入参数。例如客服 Agent 的自然语气来自后训练，企业政策由知识与 Skill 提供，关键合规则由服务端代码兜底。"},{"id":"c9-06","module":"第9章 Agent 的持续进化","type":"single","stem":"教材引用的 PreAct 一类程序化工作流，在重复任务上实现的端到端加速幅度是？","options":[{"id":"A","text":"约 2 倍"},{"id":"B","text":"约 8.5–13 倍"},{"id":"C","text":"约 30 倍"},{"id":"D","text":"没有可测量的加速"}],"answer":["B"],"explain":"这类把浏览器轨迹编译成参数化工作流的程序在重复任务上实现 8.5–13 倍端到端加速，回放阶段无需逐步调用语言模型。其关键前提是同时具备动作前验证、动作后验证与独立回放验证，否则会出现「每个按钮都点过但任务从未完成」的假象。"},{"id":"c9-07","module":"第9章 Agent 的持续进化","type":"single","stem":"DeepSeek Harness（dsh）在「一切皆插件」的设计下提出的核心论断是？","options":[{"id":"A","text":"自我进化的上限取决于模型能写出多好的代码"},{"id":"B","text":"自我进化的上限取决于承载它的系统具有多强的可组合性"},{"id":"C","text":"必须保留一个只能由人类维护的特权内核"},{"id":"D","text":"自我修改应直接在稳定版本上进行"}],"answer":["B"],"explain":"dsh 强调「一切皆插件」，核心论断是自我进化的上限不取决于模型能写出多好的代码，而取决于承载它的系统具有多强的可组合性；它让模型适配器、工具注册表、会话日志乃至 Agent 主循环本身都成为插件，不存在只能由人类维护的特权内核。"},{"id":"c9-08","module":"第9章 Agent 的持续进化","type":"single","stem":"关于 dsh 中模型自己写出的插件，教材指出的边界是？","options":[{"id":"A","text":"可以直接替换正式插件并立即生效"},{"id":"B","text":"只活在进程内存里、重启即消失，不能被自动提升为正式插件"},{"id":"C","text":"会自动写入模型参数从而长期保留"},{"id":"D","text":"必须在运行前通过人工逐个批准，否则无法装入"}],"answer":["B"],"explain":"教材指出模型写出的插件只活在进程内存里、重启即消失，不能被自动提升为正式插件；要留下来必须走 worktree + Pull Request 那条更慢的路。这正是「待验证能力与正式能力隔离」原则的具体体现。"},{"id":"c9-09","module":"第9章 Agent 的持续进化","type":"single","stem":"教材区分三种「回放」，其中「浏览器工作流回放」改变的是？","options":[{"id":"A","text":"Agent 知道什么"},{"id":"B","text":"Agent 怎样重复执行"},{"id":"C","text":"Agent 怎样组织探索"},{"id":"D","text":"模型参数的分布"}],"answer":["B"],"explain":"三种回放各有所指：轨迹总结把经验压缩成知识或 Prompt，改变的是 Agent 知道什么；浏览器工作流回放让程序在新任务中重复一条已验证路径，改变的是怎样重复执行；发现树回放则比较 Agent 怎样组织探索。"},{"id":"c9-10","module":"第9章 Agent 的持续进化","type":"multiple","stem":"验证器的输出要成为可用的「学习信号」，教材要求包含下列哪些内容？","options":[{"id":"A","text":"任务是成功、部分成功还是失败"},{"id":"B","text":"每个维度各自的结论"},{"id":"C","text":"每条结论对应的证据位置，即哪一轮对话、哪一次工具调用"},{"id":"D","text":"模型自报的置信度分数，可直接作为批准门槛"}],"answer":["A","B","C"],"explain":"四项必备内容是任务成败、各维度结论、每条结论对应的证据位置，以及失败的类型标签。教材还要求验证器在证据不足时有权拒绝评分，因为模型给出的置信度只是未经验证的估计，不能充当批准门槛，故 D 错误。"},{"id":"c9-11","module":"第9章 Agent 的持续进化","type":"multiple","stem":"关于持续进化的三道安全边界，符合教材表述的有？","options":[{"id":"A","text":"证据与指令隔离：原始网页、工具输出及其 LLM 摘要都属不可信证据"},{"id":"B","text":"待验证能力与正式能力隔离：新代码与外部依赖需经沙盒、权限检查与行为测试"},{"id":"C","text":"安全机制不可自我修改：业务 Agent 不能修改验证器、测试用例、发布门槛与审计日志"},{"id":"D","text":"只要人工批准过一次，LLM 给出的置信度即可作为后续更新的默认门槛"}],"answer":["A","B","C"],"explain":"三道边界是证据与指令隔离、待验证能力与正式能力隔离、安全机制不可自我修改。教材强调 LLM 总结只是便于处理的转换，并不是把输入变得无害的净化过程，模型给出的置信度也只是未经验证的估计，故 D 错误。否则 Agent 只需降低阈值就能把退化伪装成进步。"},{"id":"c9-12","module":"第9章 Agent 的持续进化","type":"multiple","stem":"关于「睡眠学习」，下列符合教材表述的有？","options":[{"id":"A","text":"它是对离线整合的认知类比，并不要求任务真的在夜间运行"},{"id":"B","text":"触发门槛可以是时间间隔、新增轨迹数量、存储容量或错误频率"},{"id":"C","text":"包含修剪与索引：把长期不用或被新证据推翻的能力标记为过期、归档或删除"},{"id":"D","text":"采集与整合完成后无需验证即可直接写入长期能力"}],"answer":["A","B","C"],"explain":"睡眠学习五个步骤为触发、定向、采集与整合、验证与审批、修剪与索引；把采集与整理分开可防止一次偶发成功、网络故障或恶意输入立刻改写长期能力。验证与审批必须先在迁移集、保留集和安全集上评估，高风险写入还需人工批准，故 D 错误。"},{"id":"c9-13","module":"第9章 Agent 的持续进化","type":"multiple","stem":"关于「可验证闭环的边界」，符合教材表述的有？","options":[{"id":"A","text":"在开放式科研、战略规划与复杂产品设计中，Harness 可能稳定产出「像成果的东西」却没有推动真实目标"},{"id":"B","text":"自动科研压力测试暴露了实现漂移、认识论上的过度乐观与隐性判断力不足"},{"id":"C","text":"对策包括结论与证据分离、保留负面结果、维护搜索多样性、让人类在更高层介入"},{"id":"D","text":"只要流程执行得完整，闭环就一定等于真实进步"}],"answer":["A","B","C"],"explain":"教材承认闭环的可靠性依赖结果可自动验证：在开放式科研与战略规划中，系统可能稳定产出「像成果的东西」却未推动真实目标。三类问题是实现漂移、认识论过度乐观与隐性判断力不足；对策含结论与证据分离、保留负面结果、维护搜索多样性、人类更高层介入，故 D 错误。"},{"id":"c9-14","module":"第9章 Agent 的持续进化","type":"judge","stem":"判断：把一百条轨迹放进长上下文或向量库，就等于完成了「从经历中学习」。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"错误。教材强调「保存经历不等于从经历中学习」：把轨迹放进长上下文或向量库只能帮助找回某个案例，不会自动完成跨案例比较；学习发生在系统主动完成「评价、对照、归纳、验证」之后，而不是日志写入磁盘的那一刻。"},{"id":"c9-15","module":"第9章 Agent 的持续进化","type":"judge","stem":"判断：Reflexion 式的自然语言反思本身就是证据，可以直接写入正式的知识文档。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"错误。教材指出自然语言反思可以参与生成经验草案，但反思本身不是证据；只有按任务族聚合、建立「哪些轨迹支持、哪些轨迹反驳」的证据表，并达到支持门槛的草案才写入正式文档，还需在未参与提炼的新任务上测试迁移效果。"},{"id":"c9-16","module":"第9章 Agent 的持续进化","type":"judge","stem":"判断：就全书结构而言，Agent 的持续进化构建的是第一章发现循环中的「实验与反馈」环节。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["T"],"explain":"正确。教材小结指出，就全书结构而言，持续进化构建的是第一章发现循环中的实验与反馈环节；历史不仅能被提炼为静态经验，还能在支持域内组成回放环境，用较低成本筛选探索策略。"},{"id":"c10-01","module":"第10章 多 Agent 协作","type":"single","stem":"教材判断「什么时候真正需要多个 Agent」的核心判据是？","options":[{"id":"A","text":"任务本身的描述是否足够长"},{"id":"B","text":"协作过程是否引入了单个 Agent 在生成时无法获得的新信息"},{"id":"C","text":"是否使用了多个不同厂商的模型"},{"id":"D","text":"参与的 Agent 数量是否超过三个"}],"answer":["B"],"explain":"教材给出的核心判据只有一条：协作过程是否引入了单个 Agent 在生成时无法获得的新信息。若只是同一模型、同一上下文互相讨论，没有引入新信息，多 Agent 通常无效甚至有害；还要看信息增量是否值得额外 token 成本。"},{"id":"c10-02","module":"第10章 多 Agent 协作","type":"single","stem":"在「多 Agent 是否优于单 Agent」的对照中，下列哪种审核方式被判定为「否，在等计算量下与单 Agent 持平」？","options":[{"id":"A","text":"审核者使用测试执行结果"},{"id":"B","text":"审核者查看渲染截图"},{"id":"C","text":"不同 Agent 辩论同一段文本"},{"id":"D","text":"审核者使用外部工具验证事实"}],"answer":["C"],"explain":"对照表判定：同一模型自我审查通常无效甚至有害；不同 Agent 辩论同一段文本在等计算量下与单 Agent 持平；而审核者使用测试执行结果、查看渲染截图或使用外部工具验证事实，都因为引入了新信息而显著提升。"},{"id":"c10-03","module":"第10章 多 Agent 协作","type":"single","stem":"当角色的差异主要来自知识、流程和写作风格时，教材推荐采用哪种载体？","options":[{"id":"A","text":"transfer_to_agent，替换 system prompt 并通常替换工具集"},{"id":"B","text":"Skill，在固定 system prompt 的 Skill 目录中按需追加 SKILL.md"},{"id":"C","text":"cancel_subagent，强制终止后重建进程"},{"id":"D","text":"为每个角色新开一整套独立仓库"}],"answer":["B"],"explain":"选择规则是：角色差异主要来自知识、流程和写作风格时优先用 Skill，它按需把 SKILL.md 追加到轨迹，静态前缀不变可复用；角色差异涉及权限、工具隔离、合规边界时，才用独立 Agent 或 transfer_to_agent，并由 Harness 用代码限制工具调用。"},{"id":"c10-04","module":"第10章 多 Agent 协作","type":"single","stem":"在用操作系统类比多 Agent 系统时，教材把「fork」对应到哪个操作？","options":[{"id":"A","text":"spawn_subagent"},{"id":"B","text":"cancel_subagent"},{"id":"C","text":"list_agents"},{"id":"D","text":"get_subagent_status"}],"answer":["A"],"explain":"教材的对应关系是：静态前缀（系统提示词 + 工具定义）像程序，轨迹像进程内存，LLM 像 CPU，Agent 运行时像内核，工具调用像系统调用；fork 对应 spawn_subagent，kill 对应 cancel_subagent，ps 对应 list_agents。"},{"id":"c10-05","module":"第10章 多 Agent 协作","type":"single","stem":"虚拟文件系统的四类区域中，教材指出「并发冲突高发处」并需要乐观锁或 worktree 的是？","options":[{"id":"A","text":"Agent 专属工作区（Scratchpad）"},{"id":"B","text":"多 Agent 共享空间（Shared Workspace）"},{"id":"C","text":"外部挂载资源"},{"id":"D","text":"系统内置资源"}],"answer":["B"],"explain":"多 Agent 共享空间对所有协作 Agent 与用户可见、随任务持久化，是并发冲突高发处，需要乐观锁或 worktree。Scratchpad 仅该 Agent 可见且随实例销毁、无需并发控制；外部挂载资源以按需只读为主；系统内置资源全局只读。"},{"id":"c10-06","module":"第10章 多 Agent 协作","type":"single","stem":"对等协作（Peer Collaboration）模式通常涉及多少个平等身份的 Agent？","options":[{"id":"A","text":"2–3 个"},{"id":"B","text":"5–10 个"},{"id":"C","text":"数十个"},{"id":"D","text":"上百个"}],"answer":["A"],"explain":"对等协作通常涉及 2–3 个平等身份的 Agent，通过多轮迭代互相提供反馈。教材特别警示「多个实例不等于多种思路」：当模型、上下文和脚手架高度相似时，不同 Agent 往往会做出相同选择，使局部错误演变为系统性故障。"},{"id":"c10-07","module":"第10章 多 Agent 协作","type":"single","stem":"关于 Loop 工程（Loop Engineering），业界的核心共识是？","options":[{"id":"A","text":"循环的瓶颈在模型的推理速度"},{"id":"B","text":"循环的瓶颈在验证器，而不在模型"},{"id":"C","text":"循环的瓶颈在提示词的长度"},{"id":"D","text":"循环的瓶颈在单次调用的 token 成本"}],"answer":["B"],"explain":"业界共识是循环的瓶颈在验证器，而不在模型：验证不可靠时，循环转得再快也只是把劣质产出更快地标记为完成。LoopX 的系统不变量正是「模型可以提出完成，但不能批准自己的完成」，只有通过独立验证的结果才能写入持久进度。"},{"id":"c10-08","module":"第10章 多 Agent 协作","type":"single","stem":"提议者—审核者循环的「最小不变量」是？","options":[{"id":"A","text":"审核者用同一个模型把代码再看一遍即可"},{"id":"B","text":"审核者读取独立证据，且不能修改测试、证据采集器或发布门槛"},{"id":"C","text":"审核者必须与提议者使用完全相同的提示词"},{"id":"D","text":"提议者可以兼任审核者以节省成本"}],"answer":["B"],"explain":"最小不变量是：审核者读取独立证据而不是复述提议者的解释，退回时必须给出可定位的修复条件；且审核者不能修改测试、证据采集器或发布门槛，否则「独立验证」会退化成自我批准。仅用同一模型再看一遍并不能引入新信息。"},{"id":"c10-09","module":"第10章 多 Agent 协作","type":"single","stem":"教材用微服务术语区分「编排（orchestration）」与「编舞（choreography）」，其中「编舞」指的是？","options":[{"id":"A","text":"由中心 Manager 统一调度任务"},{"id":"B","text":"靠每位舞者自行把握入场时机，没有中心控制者"},{"id":"C","text":"一种消息总线的具体实现"},{"id":"D","text":"OpenAI Swarm 中的 handoff 选项本身"}],"answer":["B"],"explain":"教材用这两个词对照：编排由指挥统一调度，对应管理者模式；编舞靠每位舞者自行把握入场时机，对应没有运行时中心控制者的去中心化模式，例如 OpenAI Swarm 中控制权像接力棒一样在对等 Agent 之间流转的 handoff 网络。"},{"id":"c10-10","module":"第10章 多 Agent 协作","type":"multiple","stem":"关于共享上下文下角色转换的两种载体，符合教材表述的有？","options":[{"id":"A","text":"transfer_to_agent 替换 system prompt 并通常替换工具集，越界工具可在 schema 层不可见"},{"id":"B","text":"Skill 把 SKILL.md 按需追加到轨迹，静态前缀保持不变，已有前缀可继续复用"},{"id":"C","text":"角色差异涉及权限、工具隔离或合规边界时，应使用独立 Agent 或 transfer_to_agent，并在 Harness 层用代码限制"},{"id":"D","text":"transfer_to_agent 的每次切换都不会影响请求前缀缓存"}],"answer":["A","B","C"],"explain":"transfer_to_agent 只暴露当前角色工具，约束强，但每次切换都改变请求前缀，从变化点起的前缀缓存通常无法复用；Skill 约束较弱，硬权限仍需 Harness 门。故 D 与教材相反，角色差异涉及权限与合规边界时应强化约束而非弱化。"},{"id":"c10-11","module":"第10章 多 Agent 协作","type":"multiple","stem":"教材归纳的「控制平面」四件事包含下列哪些？","options":[{"id":"A","text":"消息传递"},{"id":"B","text":"状态查询"},{"id":"C","text":"执行终止"},{"id":"D","text":"独立训练每个子 Agent 的参数"}],"answer":["A","B","C"],"explain":"控制平面四件事是消息传递、状态查询、执行终止、资源与调度。Agent 数量增多时点对点连接数随 Agent 数呈平方增长，应改用消息总线；消息应携带结构化信封，含发送者 ID、目标、消息类型与 JSON 负载。D 属于模型后训练，不属于控制平面。"},{"id":"c10-12","module":"第10章 多 Agent 协作","type":"multiple","stem":"关于多 Agent 的失败模式，符合教材表述的有？","options":[{"id":"A","text":"共享文件系统的并发冲突分为简单冲突（文件级写入冲突）与语义冲突（逻辑级一致性冲突）"},{"id":"B","text":"错误级联放大的对策是交叉验证，让某 Agent 以独立视角只看原始证据与最终结论是否一致"},{"id":"C","text":"同质趋同带来的共因失效意味着同模型、相似上下文的多个审核意见不能自动视为相互独立的证据"},{"id":"D","text":"拜占庭故障指的是部件直接停止工作"}],"answer":["A","B","C"],"explain":"教材区分崩溃故障（部件停止工作）与拜占庭故障（部件持续工作却给出错误信息）：Agent 的故障天生是拜占庭式的，很少径直停止，而是继续给出看似可信的错误结论，故 D 把两者说反了。A、B、C 均为教材表述。"},{"id":"c10-13","module":"第10章 多 Agent 协作","type":"multiple","stem":"关于 A2A（Agent2Agent）协议，符合教材表述的有？","options":[{"id":"A","text":"Agent Card 是描述 Agent 能力的元数据文档，解决跨组织的能力发现问题"},{"id":"B","text":"任务生命周期管理把协作单元建模为带状态机的 Task，原生支持长时间运行任务与流式进度更新"},{"id":"C","text":"不透明协作指 Agent 之间只交换任务与产物，不暴露内部提示词、思考过程和工具实现"},{"id":"D","text":"A2A 解决的是 Agent 与工具之间的互操作"}],"answer":["A","B","C"],"explain":"A2A 三要素是 Agent Card、任务生命周期管理与不透明协作。D 说反了：MCP 解决 Agent 与工具之间的互操作，A2A 解决 Agent 与 Agent 之间的互操作；团队内多 Agent 系统用消息总线即可，仅当协作方互不信任、实现互不可见时才需要 A2A。"},{"id":"c10-14","module":"第10章 多 Agent 协作","type":"judge","stem":"判断：只要让多个 Agent 看着同一段上下文互相讨论，就一定能稳定优于单 Agent。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"错误。核心判据是协作是否引入单个 Agent 无法获得的新信息：单纯让多个 Agent 围绕同一段上下文互相讨论并没有引入新信息，在等计算量下与单 Agent 持平甚至更差；工程中有效的多 Agent 系统往往包含测试执行、截图渲染等外部反馈环路。"},{"id":"c10-15","module":"第10章 多 Agent 协作","type":"judge","stem":"判断：在管理者模式中，把最强模型分配给子 Agent、让 Manager 使用较弱模型是更划算的资源分配方式。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"错误。Plan-and-Act（2025）的实证表明弱规划者是整个系统最关键的瓶颈：Planner 规划质量高时即使 Executor 简单也能取得好结果，反之所有 Executor 都建立在错误前提上。因此应把最强模型和最精心设计的提示词分配给 Manager，而不是平均分配。"},{"id":"c10-16","module":"第10章 多 Agent 协作","type":"judge","stem":"判断：虚拟文件系统中的系统内置资源（如 /skills）可被所有 Agent 并发读取而无需并发控制。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["T"],"explain":"正确。系统内置资源全局共享、只读、跨会话稳定，可被所有 Agent 并发读取而无需并发控制；需要乐观锁或 worktree 的是多 Agent 共享空间。教材提醒，相当一部分并发冲突与信息泄露，源于将本应隔离的区域混置。"},{"id":"v-01","module":"Vibe Coding 理念与工作流","type":"single","stem":"「Vibe Coding」这一术语由谁在何时提出？","options":[{"id":"A","text":"Andrej Karpathy，2025 年 2 月"},{"id":"B","text":"Simon Willison，2025 年"},{"id":"C","text":"Addy Osmani，2026 年 6 月"},{"id":"D","text":"Boris Cherny，2024 年"}],"answer":["A"],"explain":"Vibe Coding 由 Andrej Karpathy 于 2025 年 2 月提出；Simon Willison 同年提出 vibe engineering，Addy Osmani 总结出 Loop 工程，Boris Cherny 是 Claude Code 负责人。"},{"id":"v-02","module":"Vibe Coding 理念与工作流","type":"single","stem":"「Vibe Coding」的核心含义是？","options":[{"id":"A","text":"完全交给感觉，用自然语言描述需求并直接接受模型生成的代码"},{"id":"B","text":"用更短的提示词换取更快的生成速度"},{"id":"C","text":"不写任何代码，由可视化低代码平台搭建应用"},{"id":"D","text":"只把 AI 用于生成测试用例"}],"answer":["A"],"explain":"其含义是忘掉代码的存在，用自然语言描述需求、直接接受模型生成的代码，也就是「完全交给感觉」（fully give in to the vibes）。它是一种重体验、轻审查的开发范式，而不是缩短提示词，也不是退回到可视化低代码平台。"},{"id":"v-03","module":"Vibe Coding 理念与工作流","type":"single","stem":"Vibe Coding 这一术语已被哪本词典评为 2025 年度词汇（Word of the Year）？","options":[{"id":"A","text":"牛津英语词典"},{"id":"B","text":"Collins 词典"},{"id":"C","text":"韦氏词典"},{"id":"D","text":"剑桥词典"}],"answer":["B"],"explain":"该术语已被 Collins 词典评为 2025 年度词汇（Word of the Year），成为主流技术文化现象，说明它已从圈内俚语进入大众视野。牛津英语词典、韦氏词典与剑桥词典均非此处所指。"},{"id":"v-04","module":"Vibe Coding 理念与工作流","type":"single","stem":"「vibe engineering」由谁在 2025 年提出，其核心主张是什么？","options":[{"id":"A","text":"Karpathy 提出，主张完全放弃代码审查"},{"id":"B","text":"Simon Willison 提出，同样大量使用 AI 写代码，但坚持写测试、审查 diff、真正理解代码"},{"id":"C","text":"Collins 词典提出，主张把它列为年度词汇即可"},{"id":"D","text":"某大厂提出，主张用 AI 替代全部人工评审"}],"answer":["B"],"explain":"Simon Willison 于 2025 年提出 vibe engineering：同样大量使用 AI 写代码，但坚持严格工程实践——写测试、审查 diff、真正理解代码。它与 Vibe Coding 是两种不同取向，不能把二者对调。"},{"id":"v-05","module":"Vibe Coding 理念与工作流","type":"multiple","stem":"关于 Vibe Coding 的术语与起源，符合事实的有？","options":[{"id":"A","text":"由 Andrej Karpathy 于 2025 年 2 月提出"},{"id":"B","text":"含义是「完全交给感觉」，用自然语言描述需求并直接接受模型生成的代码"},{"id":"C","text":"已被 Collins 词典评为 2025 年度词汇"},{"id":"D","text":"它等同于 low-code / no-code 开发"}],"answer":["A","B","C"],"explain":"术语事实：由 Karpathy 于 2025 年 2 月提出，含义是「完全交给感觉」，用自然语言提需求并直接接受模型生成的代码，且已被 Collins 词典评为 2025 年度词汇。D 错：术语辨析强调 vibe coding 不等于 no-code 或 low-code。"},{"id":"v-06","module":"Vibe Coding 理念与工作流","type":"judge","stem":"判断：Vibe Coding 与 prompt engineering 是同一回事，都是优化模型输入技巧的统称。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"错误。术语辨析要求分开两者：prompt engineering 是优化模型输入的技巧，vibe coding 是一种重体验、轻审查的开发范式。教材同时指出，vibe coding 也不是 no-code，更不是 low-code。"},{"id":"v-07","module":"Vibe Coding 理念与工作流","type":"single","stem":"Karpathy 在提出 Vibe Coding 时划出的使用边界是？","options":[{"id":"A","text":"适合所有生产系统"},{"id":"B","text":"适合一次性/周末项目，生产代码仍需自己 review"},{"id":"C","text":"只要模型足够强就适合安全关键系统"},{"id":"D","text":"适合需要合规审计的长期核心系统"}],"answer":["B"],"explain":"Karpathy 同时划了边界：这套做法适合「一次性/周末项目」（throwaway weekend projects），生产代码仍需自己 review；Vibe Coding 不等于「不需要理解代码」，也不适合安全关键或需要合规审计的系统。"},{"id":"v-08","module":"Vibe Coding 理念与工作流","type":"single","stem":"下列哪一组属于 Vibe Coding「不适合」的场景？","options":[{"id":"A","text":"原型验证、一次性脚本、内部小工具"},{"id":"B","text":"安全关键系统、支付与金融账务、需要长期维护的核心系统、有合规审计要求的场景"},{"id":"C","text":"学习与探索、UI 微调"},{"id":"D","text":"团队内部演示与周末实验"}],"answer":["B"],"explain":"Vibe Coding 适合原型验证、一次性脚本、内部小工具、学习与探索、UI 微调；不适合安全关键系统、支付与金融账务、需要长期维护的核心系统以及有合规审计要求的场景，这些场景仍需严格工程实践与审查。"},{"id":"v-09","module":"Vibe Coding 理念与工作流","type":"single","stem":"关于 Vibe Coding 与更工程化范式的关系，符合事实的是？","options":[{"id":"A","text":"它是重体验、轻审查的一档使用范式，与更工程化的做法并行存在"},{"id":"B","text":"它就是 Loop 工程的另一个名字"},{"id":"C","text":"它已经完全取代了 spec-driven development"},{"id":"D","text":"它是目前唯一被承认的 AI 开发范式"}],"answer":["A"],"explain":"Vibe Coding 是「重体验、轻审查」的一档使用范式，与之并行的是更工程化的做法：提示工程→上下文工程→循环/Loop 工程（图工程 Graph Engineering），以及 spec-driven development。它并未取代这些做法，也不是唯一范式。"},{"id":"v-10","module":"Vibe Coding 理念与工作流","type":"multiple","stem":"下列属于 Vibe Coding 适用场景的有？","options":[{"id":"A","text":"原型验证"},{"id":"B","text":"一次性脚本"},{"id":"C","text":"内部小工具、学习与探索、UI 微调"},{"id":"D","text":"支付与金融账务"}],"answer":["A","B","C"],"explain":"适用场景包括原型验证、一次性脚本、内部小工具、学习与探索、UI 微调。D 错：支付与金融账务属于安全与合规敏感场景，需要明确的责任归属、审查与合规检查，不适合用轻审查的 Vibe Coding 处理。"},{"id":"v-11","module":"Vibe Coding 理念与工作流","type":"multiple","stem":"关于 Vibe Coding 的理念与边界，符合事实的有？","options":[{"id":"A","text":"它不等于「不需要理解代码」"},{"id":"B","text":"它适合一次性/周末项目，生产代码仍需自己 review"},{"id":"C","text":"它强依赖 Coding Agent 的文件编辑、命令执行、测试运行能力"},{"id":"D","text":"它只是「聊天写代码」，与 Agent 工具链无关"}],"answer":["A","B","C"],"explain":"Vibe Coding 不等于不需要理解代码，适合一次性/周末项目且生产代码仍需自己 review，并强依赖 Coding Agent 的文件编辑、命令执行、测试运行能力。D 是常见误解：把它简化成与工具链无关的聊天写代码。"},{"id":"v-12","module":"Vibe Coding 理念与工作流","type":"judge","stem":"判断：Vibe Coding 主张开发者可以完全不理解代码，因为模型会负责保证正确性。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"错误。Karpathy 明确划出边界：Vibe Coding 不等于「不需要理解代码」，生产代码仍需自己 review。「忘掉代码的存在」是指不必逐行手写，而不是放弃对需求的判断和对结果的审核。"},{"id":"v-13","module":"Vibe Coding 理念与工作流","type":"single","stem":"Vibe Coding 工作流四要素的正确顺序是？","options":[{"id":"A","text":"让模型先给计划 → 需求先讲清楚 → 小步实现 → 版本控制"},{"id":"B","text":"需求先讲清楚 → 让模型先给计划再动手 → 小步实现并每步运行验证 → 用版本控制保留可回滚检查点"},{"id":"C","text":"直接让模型写完整代码 → 再补需求与验收标准"},{"id":"D","text":"小步实现 → 需求澄清 → 版本控制 → 再让模型给计划"}],"answer":["B"],"explain":"四个要素的顺序是：需求先讲清楚（spec / 验收标准先行）→ 让模型先给计划再动手（plan-first）→ 小步实现、每步运行验证 → 用版本控制保留可回滚的检查点。先让模型写完整代码，或跳过需求澄清，都不符合这一流程。"},{"id":"v-14","module":"Vibe Coding 理念与工作流","type":"single","stem":"在上下文工程中，关于上下文长度的正确认识是？","options":[{"id":"A","text":"上下文越长，模型表现一定越好"},{"id":"B","text":"上下文并非越长越好，过长会稀释注意力，出现 context rot 或「迷失在中间」"},{"id":"C","text":"上下文越短越好，规则文件越少越有利"},{"id":"D","text":"上下文长度与效果无关"}],"answer":["B"],"explain":"上下文工程要求把技术栈、目录结构、常用命令、代码规范与禁忌写进项目级规则文件，但上下文并非越长越好：过长会稀释注意力，出现「上下文腐化」（context rot）或「迷失在中间」，因此只喂相关文件往往更有效。"},{"id":"v-15","module":"Vibe Coding 理念与工作流","type":"single","stem":"为什么说「让模型具备自我验证手段」是效果差异的最大来源？","options":[{"id":"A","text":"因为这样可以完全省去人工审查"},{"id":"B","text":"因为它让模型拥有可运行的测试、类型检查、lint 与构建命令，形成「改—验证—修」闭环"},{"id":"C","text":"因为它能显著减少 token 消耗"},{"id":"D","text":"因为它可以替代版本控制"}],"answer":["B"],"explain":"给它可运行的测试、类型检查、lint 与构建命令，即可形成「改—验证—修」的闭环，这是效果差异的最大来源。它并不替代人工审查，也不是为节省 token 或替代版本控制。"},{"id":"v-16","module":"Vibe Coding 理念与工作流","type":"multiple","stem":"项目级规则文件（如 AGENTS.md、CLAUDE.md、.cursorrules、系统提示词）应写清哪些内容？","options":[{"id":"A","text":"技术栈、目录结构、常用命令"},{"id":"B","text":"代码规范"},{"id":"C","text":"禁忌与约束"},{"id":"D","text":"生产密钥与客户数据"}],"answer":["A","B","C"],"explain":"规则文件应写清技术栈、目录结构、常用命令、代码规范与禁忌。D 错：把密钥、客户数据粘进上下文属于典型反模式，既可能泄露敏感信息，也会污染上下文；规则文件只应固化与任务相关的约定。"},{"id":"v-17","module":"Vibe Coding 理念与工作流","type":"multiple","stem":"下列属于 Vibe Coding 实践技巧的有？","options":[{"id":"A","text":"把任务拆到「一次能验证完」的粒度"},{"id":"B","text":"用 git 分支或 worktree 隔离实验"},{"id":"C","text":"给模型看例子（few-shot）比只给抽象规则更有效"},{"id":"D","text":"一次把所有相关文件都塞进上下文"}],"answer":["A","B","C"],"explain":"实践技巧包括把任务拆到「一次能验证完」的粒度、用 git 分支/worktree 隔离实验、先写测试或先写清验收标准、给模型看例子（few-shot）、控制单次上下文范围只喂相关文件。D 与教材相反，属于典型的反模式。"},{"id":"v-18","module":"Vibe Coding 理念与工作流","type":"judge","stem":"判断：工作流建议让模型先给出计划再动手（plan-first），并小步实现、每步运行验证。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["T"],"explain":"正确。工作流四要素之一就是让模型先给计划再动手（plan-first），并小步实现、每步运行验证；这样能在偏离需求时及早发现，并配合版本控制保留可回滚的检查点。"},{"id":"v-19","module":"Vibe Coding 理念与工作流","type":"single","stem":"下列哪一项属于 Vibe Coding 的反模式？","options":[{"id":"A","text":"不看 diff 直接接受全部生成"},{"id":"B","text":"先写测试再实现"},{"id":"C","text":"用 git 分支隔离实验"},{"id":"D","text":"要求模型解释改动原因"}],"answer":["A"],"explain":"教材列出的反模式之一是不看 diff 直接接受全部生成。其余三项都是推荐做法：先写测试或先写清验收标准、用 git 分支/worktree 隔离实验、要求模型解释改动原因；对关键 diff 还应做人工审查。"},{"id":"v-20","module":"Vibe Coding 理念与工作流","type":"single","stem":"把报错原样反复贴回模型、形成死循环，教材把这类现象称为？","options":[{"id":"A","text":"幻觉 API"},{"id":"B","text":"vibe debugging"},{"id":"C","text":"上下文腐化"},{"id":"D","text":"认知投降"}],"answer":["B"],"explain":"把报错原样反复贴回模型形成死循环，教材称为 vibe debugging，属于常见反模式。正确做法是先理解根因、缩小复现范围或补充可验证信息，而不是无差别地重复投喂同一段错误。"},{"id":"v-21","module":"Vibe Coding 理念与工作流","type":"single","stem":"针对「凭记忆使用 API」这一反模式，正确的应对方式是？","options":[{"id":"A","text":"凭记忆编写 API 更快，鼓励优先使用"},{"id":"B","text":"查文档与类型定义，避免产生幻觉 API"},{"id":"C","text":"让模型自由编造接口名，后续再纠正"},{"id":"D","text":"关闭类型检查以减少阻碍"}],"answer":["B"],"explain":"凭记忆使用 API 会产生幻觉 API（编造不存在的接口或参数），反模式的解法是查文档与类型定义，而不是依赖记忆或让模型自由编造；确切的接口与类型信息应来自官方文档与代码。"},{"id":"v-22","module":"Vibe Coding 理念与工作流","type":"single","stem":"关于 AI 生成代码的责任归属，符合教材主张的是？","options":[{"id":"A","text":"责任在模型提供方，开发者无需负责"},{"id":"B","text":"责任仍在提交它的人，PR review、许可证与合规检查、安全扫描不能省"},{"id":"C","text":"既然是模型生成，就可以跳过 PR review"},{"id":"D","text":"内部小工具无需任何检查"}],"answer":["B"],"explain":"责任归属原则是：AI 生成代码的责任仍在提交它的人，PR review、许可证与合规检查、安全扫描不能省。责任不会因使用模型而转移给模型提供方，内部小工具也不应完全跳过检查。"},{"id":"v-23","module":"Vibe Coding 理念与工作流","type":"multiple","stem":"下列属于 Vibe Coding 反模式的有？","options":[{"id":"A","text":"不看 diff 直接接受全部生成"},{"id":"B","text":"把报错原样反复贴回形成死循环"},{"id":"C","text":"没有测试就宣称完成"},{"id":"D","text":"对关键 diff 做人工审查"}],"answer":["A","B","C"],"explain":"反模式包括不看 diff 直接接受全部生成、把报错原样反复贴回形成死循环（vibe debugging）、没有测试就宣称完成等。D 相反：对关键 diff 做人工审查是推荐做法，而非反模式。"},{"id":"v-24","module":"Vibe Coding 理念与工作流","type":"judge","stem":"判断：一次性把一整个大需求交给模型、并让它同时改动一堆不相关文件，是更高效的交付方式。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"错误。一次要求改动一堆不相关文件是典型反模式，会放大审查难度并引入连锁错误；正确做法是把任务拆到「一次能验证完」的粒度，小步实现、每步运行验证。"},{"id":"v-25","module":"Vibe Coding 理念与工作流","type":"single","stem":"关于 Vibe Coding 的度量口径，正确的认识是？","options":[{"id":"A","text":"生成速度提升就等于交付速度提升"},{"id":"B","text":"生成速度提升不等于交付速度提升，瓶颈会转移到审查与测试环节"},{"id":"C","text":"只要关注 token 消耗即可衡量效果"},{"id":"D","text":"这类范式的效果无法也不需要度量"}],"answer":["B"],"explain":"度量口径要求区分生成速度与交付速度：生成速度提升不等于交付速度提升，瓶颈会转移到审查与测试环节。只看生成速度或 token 消耗都无法反映真实交付效率，也不存在无需度量一说。"},{"id":"v-26","module":"Vibe Coding 理念与工作流","type":"single","stem":"下列哪一组指标可用于衡量 Vibe Coding 的实际效果？","options":[{"id":"A","text":"测试通过率、一次性通过率、返工率、pass@k"},{"id":"B","text":"代码行数、提交次数"},{"id":"C","text":"模型参数量、显存占用"},{"id":"D","text":"用户数、下载量"}],"answer":["A"],"explain":"可用测试通过率、一次性通过率、返工率、pass@k 等衡量效果。代码行数、提交次数、模型参数量、显存、用户数与下载量都不能反映 Vibe Coding 在交付质量与效率上的真实表现。"},{"id":"v-27","module":"Vibe Coding 理念与工作流","type":"single","stem":"「生成速度提升 ≠ 交付速度提升」这一口径意味着什么？","options":[{"id":"A","text":"瓶颈会转移到审查与测试环节"},{"id":"B","text":"只要生成得足够快，交付就一定会变快"},{"id":"C","text":"应当相应取消测试环节以匹配速度"},{"id":"D","text":"说明代码审查并不重要"}],"answer":["A"],"explain":"这一口径的含义是瓶颈会转移：模型生成变快后，审查与测试成为新的限制环节，若不相应加强验证，交付速度并不会同比例提升。因此不能用生成速度替代交付速度，更不能据此取消测试或审查环节。"},{"id":"v-28","module":"Vibe Coding 理念与工作流","type":"multiple","stem":"下列可作为 Vibe Coding 效果度量的有？","options":[{"id":"A","text":"测试通过率"},{"id":"B","text":"一次性通过率"},{"id":"C","text":"返工率"},{"id":"D","text":"模型参数量"}],"answer":["A","B","C"],"explain":"可作为效果度量的有测试通过率、一次性通过率、返工率、pass@k 等。D 错：模型参数量是模型规格而非交付效果的度量，与 Vibe Coding 的实际产出质量与效率没有直接关系。"},{"id":"v-29","module":"Vibe Coding 理念与工作流","type":"judge","stem":"判断：模型越强，就越不需要用测试来保证交付质量。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"错误。这是教材点名的常见误解之一。让模型具备自我验证手段（可运行的测试、类型检查、lint、构建命令）是效果差异的最大来源，模型越强也仍然需要可验证的反馈闭环来保证交付质量。"},{"id":"v-30","module":"Vibe Coding 理念与工作流","type":"single","stem":"团队大规模引入 AI 生成代码后，代码评审标准应当如何调整？","options":[{"id":"A","text":"适当降低评审标准以匹配生成速度"},{"id":"B","text":"评审标准不降低，可调整的是流程与标注方式"},{"id":"C","text":"完全取消评审环节"},{"id":"D","text":"只对内部小工具保留评审"}],"answer":["B"],"explain":"组织层面的共识是：代码评审标准不降低，可调整的是流程与标注方式——明确哪些代码允许 AI 生成、如何标注、评审标准如何衔接。以生成速度为由降低或取消评审，只会把风险后移到生产环境。"},{"id":"v-31","module":"Vibe Coding 理念与工作流","type":"single","stem":"关于 AI 生成代码的责任与合规，符合教材主张的是？","options":[{"id":"A","text":"责任已随生成过程转移给模型提供方"},{"id":"B","text":"责任仍在提交它的人，许可证与合规检查、安全扫描不能省"},{"id":"C","text":"生成内容无需任何标注"},{"id":"D","text":"内部使用可以跳过安全扫描"}],"answer":["B"],"explain":"责任归属原则要求：责任仍在提交代码的人，许可证与合规检查、安全扫描不能省。责任不会因使用模型而转移给模型提供方，生成内容应可追溯与标注，内部使用也不能跳过安全扫描。"},{"id":"v-32","module":"Vibe Coding 理念与工作流","type":"single","stem":"团队制定 AI 使用规范时，通常需要明确的三类问题是？","options":[{"id":"A","text":"哪些代码允许 AI 生成、如何标注、评审标准如何调整"},{"id":"B","text":"模型参数量、显卡型号、推理框架"},{"id":"C","text":"代码行数、提交频率、分支命名"},{"id":"D","text":"用户画像、营收目标、市场计划"}],"answer":["A"],"explain":"组织的 AI 使用规范通常需要明确三类问题：哪些代码允许 AI 生成、生成内容如何标注、评审标准如何调整。模型与硬件规格属于技术选型，代码行数与提交次数属于过程指标，都不是规范要约定的核心问题。"},{"id":"v-33","module":"Vibe Coding 理念与工作流","type":"multiple","stem":"下列符合组织层面 AI 协作规范的做法有？","options":[{"id":"A","text":"约定哪些代码允许 AI 生成"},{"id":"B","text":"约定 AI 生成内容如何标注"},{"id":"C","text":"坚持代码评审标准不因使用 AI 而降低"},{"id":"D","text":"为方便模型调用，把生产密钥与客户数据写进共享的规则文件"}],"answer":["A","B","C"],"explain":"符合规范的做法是约定哪些代码允许 AI 生成、生成内容如何标注，并坚持代码评审标准不因使用 AI 而降低。D 错：把生产密钥、客户数据粘进上下文既可能造成泄露，也与规范相悖。"},{"id":"v-34","module":"Vibe Coding 理念与工作流","type":"judge","stem":"判断：为了匹配 AI 的生成速度，团队应当同步降低代码评审标准。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"错误。组织层面的共识是：可以约定 AI 使用规范、调整流程与标注方式，但代码评审标准不降低。以生成速度为由降低评审标准，会把风险后移到生产环境。"},{"id":"v-35","module":"Vibe Coding 理念与工作流","type":"single","stem":"对「Vibe Coding 意味着不用懂编程」这一常见说法，正确的回应是？","options":[{"id":"A","text":"确实如此，只要会描述需求就不需要任何判断"},{"id":"B","text":"这是误解，它实际更需要判断力：要知道自己要什么、能判断结果对不对"},{"id":"C","text":"只有资深架构师才能使用"},{"id":"D","text":"它与开发者经验完全无关，纯凭运气"}],"answer":["B"],"explain":"这是常见误解。Vibe Coding 并不等于不用懂编程：它实际更需要判断力——开发者要知道自己要什么、能判断结果对不对；同时它也强依赖 Coding Agent 的文件编辑、命令执行与测试运行能力。"},{"id":"v-36","module":"Vibe Coding 理念与工作流","type":"single","stem":"「Vibe Coding 只适合新手」这一观点，教材如何定位？","options":[{"id":"A","text":"确实是新手专属范式"},{"id":"B","text":"属于常见误解，它并非新手专属，反而更依赖判断力"},{"id":"C","text":"只有资深工程师才有资格使用"},{"id":"D","text":"与经验完全无关"}],"answer":["B"],"explain":"「只适合新手」是常见误解。Vibe Coding 反而更依赖判断力：需要明确需求和验收标准、能判断生成结果是否正确，这些都与经验和品味相关，并非新手专属，也不是纯粹凭运气。"},{"id":"v-37","module":"Vibe Coding 理念与工作流","type":"multiple","stem":"下列属于 Vibe Coding 常见误解的有？","options":[{"id":"A","text":"Vibe Coding 意味着不用懂编程"},{"id":"B","text":"它只适合新手"},{"id":"C","text":"模型越强越不需要测试"},{"id":"D","text":"它要求开发者能判断生成结果对不对"}],"answer":["A","B","C"],"explain":"常见误解包括：Vibe Coding 意味着不用懂编程、只适合新手、模型越强越不需要测试（以及 AI 写的代码不需要 review）。D 相反，它是正确认识——该范式仍要求开发者能判断结果对不对。"},{"id":"v-38","module":"Vibe Coding 理念与工作流","type":"multiple","stem":"关于 Vibe Coding 与工具链、其他范式的关系，下列正确的有？","options":[{"id":"A","text":"它只是「聊天写代码」，与 Agent 工具链无关"},{"id":"B","text":"它强依赖 Coding Agent 的文件编辑、命令执行、测试运行能力"},{"id":"C","text":"它不等于 no-code，也不等于 low-code"},{"id":"D","text":"它就是 prompt engineering 的另一种说法"}],"answer":["B","C"],"explain":"正确表述是：Vibe Coding 强依赖 Coding Agent 的文件编辑、命令执行、测试运行能力，并且它不等于 no-code 或 low-code。A 把它误当成与工具链无关的聊天写代码；D 把它误当成 prompt engineering。"},{"id":"v-39","module":"Vibe Coding 理念与工作流","type":"judge","stem":"判断：AI 写的代码不需要 review，因为模型会自行保证正确性。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"错误。AI 生成代码的责任仍在提交它的人，PR review、许可证与合规检查、安全扫描不能省；「AI 写的代码不需要 review」正是教材点名的常见误解，模型不会自动承担正确性责任。"},{"id":"v-40","module":"Vibe Coding 理念与工作流","type":"judge","stem":"判断：Vibe Coding 与 vibe engineering 是同义词，只是说法不同。","options":[{"id":"T","text":"正确"},{"id":"F","text":"错误"}],"answer":["F"],"explain":"错误。二者取向不同：Vibe Coding 是重体验、轻审查的使用范式；vibe engineering 由 Simon Willison 于 2025 年提出，同样大量使用 AI 写代码，但坚持严格工程实践，如写测试、审查 diff、真正理解代码，不能视为同义词。"}]}</script>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ---------- 常量 ---------- */
+  var PER_Q = 0.5;
+  var TYPE_LABEL = {single:'单选题', multiple:'多选题', judge:'判断题'};
+  var TYPE_CLASS = {single:'tag-single', multiple:'tag-multiple', judge:'tag-judge'};
+  var KEY_HINT = ['A','B','C','D'];
+
+  /* ---------- 读题库 ---------- */
+  var bank = JSON.parse(document.getElementById('qbank').textContent);
+  var QUESTIONS = bank.questions;
+
+  /* ---------- 工具 ---------- */
+  function $(id){ return document.getElementById(id); }
+  function shuffle(arr){
+    var a = arr.slice();
+    for (var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+    return a;
+  }
+  function fmtTime(ms){
+    var s = Math.max(0, Math.floor(ms/1000));
+    var h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+    function p(n){ return (n<10?'0':'')+n; }
+    return h>0 ? (h+':'+p(m)+':'+p(sec)) : (p(m)+':'+p(sec));
+  }
+  function pct(a,b){ return b ? (a/b*100) : 0; }
+  function fmtPct(v){ return (Math.round(v*10)/10).toFixed(1) + '%'; }
+  function fmtScore(v){ return (Math.round(v*100)/100).toString(); }
+  function esc(s){ return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+  function uniq(arr){ var seen={},out=[]; arr.forEach(function(x){ if(!seen[x]){seen[x]=1;out.push(x);} }); return out; }
+  // 作答标识的可读文本：判断题显示「正确 / 错误」而非 T / F
+  function ansLabel(q, ids){
+    return (ids || []).map(function(x){
+      return q.type === 'judge' ? (x === 'T' ? '正确' : '错误') : x;
+    }).join('、');
+  }
+  // 判断题选项：左侧标记显示 正确/错误，右侧说明题干是否成立
+  function optKeyText(q, o, k){
+    if(q.type === 'judge') return o.id === 'T' ? '正确' : '错误';
+    return KEY_HINT[k] || String(k+1);
+  }
+  function optBodyText(q, o){
+    if(q.type === 'judge') return o.id === 'T' ? '题干说法成立' : '题干说法不成立';
+    return o.text;
+  }
+
+  var MODULES = uniq(QUESTIONS.map(function(q){ return q.module; }));
+  var TOTAL = QUESTIONS.length;
+  var FULL = TOTAL * PER_Q;
+
+  /* ---------- 会话状态 ---------- */
+  var S = null;          // {paper, pos, startTs, endTs, submitted}
+  var timerId = null;
+  var advTimer = null;
+
+  /* ================= 考前须知 ================= */
+  function buildOverview(){
+    var byType = {single:0,multiple:0,judge:0}, byMod = {};
+    QUESTIONS.forEach(function(q){
+      byType[q.type]++;
+      if(!byMod[q.module]) byMod[q.module] = {n:0};
+      byMod[q.module].n++;
+    });
+    $('cfgCount').textContent = TOTAL + ' 题（每次考试全部作答）';
+    $('cfgTypes').innerHTML = '单选 ' + byType.single + ' 题 · 多选 ' + byType.multiple + ' 题 · 判断 ' + byType.judge + ' 题';
+    $('cfgModules').textContent = MODULES.length + ' 个模块：教材第 1–10 章 + Vibe Coding 专题';
+    $('brandMeta').textContent = TOTAL + ' 题 / 满分 ' + fmtScore(FULL);
+    $('totNo').textContent = TOTAL;
+    $('railCount').textContent = '已答 0 / ' + TOTAL;
+
+    var rows = '<tr><th style="width:38%">题型</th><th>题数</th><th>分值</th><th>合计</th></tr>';
+    ['single','multiple','judge'].forEach(function(t){
+      rows += '<tr><td>' + TYPE_LABEL[t] + '</td><td class="num">' + byType[t] + '</td><td class="num">0.5</td><td class="num">' + fmtScore(byType[t]*PER_Q) + '</td></tr>';
+    });
+    rows += '<tr><td><b>合计</b></td><td class="num"><b>' + TOTAL + '</b></td><td class="num">—</td><td class="num"><b>' + fmtScore(FULL) + '</b></td></tr>';
+    $('tblTypes').innerHTML = rows;
+
+    var mr = '<tr><th style="width:62%">模块</th><th>题数</th><th>分值</th></tr>';
+    MODULES.forEach(function(m){
+      mr += '<tr><td>' + esc(m) + '</td><td class="num">' + byMod[m].n + '</td><td class="num">' + fmtScore(byMod[m].n*PER_Q) + '</td></tr>';
+    });
+    $('tblModules').innerHTML = mr;
+
+    // 答题卡下拉
+    var sel = '<option value="">全部模块（' + TOTAL + ' 题）</option>';
+    MODULES.forEach(function(m){
+      sel += '<option value="' + esc(m) + '">' + esc(m) + '（' + byMod[m].n + ' 题）</option>';
+    });
+    $('railModule').innerHTML = sel;
+    $('revModule').innerHTML = '<option value="">全部模块</option>' + MODULES.map(function(m){
+      return '<option value="' + esc(m) + '">' + esc(m) + '</option>';
+    }).join('');
+  }
+
+  /* ================= 开始考试 ================= */
+  // 选项打乱后按显示顺序重新编号（A/B/C/D），并把解析里引用的选项字母同步改写，
+  // 否则反馈中出现的字母会与屏幕上看到的选项对不上。
+  function remapExplain(q, map){
+    if(q.type === 'judge') return q.explain;
+    var changed = Object.keys(map).some(function(k){ return map[k] !== k; });
+    if(!changed) return q.explain;
+    return q.explain.replace(/(^|[^A-Za-z0-9])([A-D])(?![A-Za-z0-9])/g, function(_, pre, ch){
+      return pre + (map[ch] || ch);
+    });
+  }
+
+  function startExam(){
+    var order = shuffle(QUESTIONS.map(function(_,i){ return i; }));
+    var paper = order.map(function(idx){
+      var q = QUESTIONS[idx];
+      var opts = (q.type === 'judge') ? q.options.slice() : shuffle(q.options);
+      var map = {}, correct = [];
+      if(q.type === 'judge'){
+        correct = q.answer.slice();               // 判断题沿用 T / F，展示时转成正确 / 错误
+      } else {
+        var keys = opts.map(function(_,k){ return KEY_HINT[k]; });   // 显示位置 -> A/B/C/D
+        opts.forEach(function(o,k){ map[o.id] = keys[k]; });         // 原字母 -> 新字母
+        opts.forEach(function(o,k){ if(q.answer.indexOf(o.id) >= 0) correct.push(keys[k]); });
+      }
+      var it = { q:q, opts:opts, map:map, correct:correct, picked:null, judged:false, ok:false };
+      it.explainText = remapExplain(q, map);
+      return it;
+    });
+    S = { paper:paper, pos:0, startTs:Date.now(), endTs:null, submitted:false };
+    if(advTimer){ clearTimeout(advTimer); advTimer = null; }
+
+    $('screenStart').classList.add('hide');
+    $('screenReport').classList.add('hide');
+    $('screenExam').classList.remove('hide');
+    $('topbar').classList.remove('hide');
+
+    buildRail();
+    renderQuestion();
+    updateTop();
+    if(timerId) clearInterval(timerId);
+    timerId = setInterval(function(){
+      if(S && !S.submitted) $('mTime').textContent = fmtTime(Date.now()-S.startTs);
+    }, 1000);
+    window.scrollTo(0,0);
+    window.onbeforeunload = function(e){ if(S && !S.submitted){ e.preventDefault(); e.returnValue = ''; return ''; } };
+  }
+
+  /* ================= 答题卡 ================= */
+  function buildRail(){
+    var grid = $('railGrid');
+    grid.innerHTML = S.paper.map(function(it,i){
+      return '<button class="cell" data-i="' + i + '" title="第 ' + (i+1) + ' 题">' + (i+1) + '</button>';
+    }).join('');
+    grid.onclick = function(e){
+      var b = e.target.closest ? e.target.closest('.cell') : null;
+      if(!b) return;
+      goto(parseInt(b.getAttribute('data-i'),10));
+      openRail(false);
+    };
+    buildSide();
+  }
+
+  /* 大屏左下角：本卷进度（按模块） */
+  function buildSide(){
+    var el = $('sideList');
+    if(!el) return;
+    el.innerHTML = MODULES.map(function(m){
+      return '<div class="side-row" data-mod="' + esc(m) + '">' +
+               '<div class="side-name"><span>' + esc(m) + '</span><span class="side-num">0/0</span></div>' +
+               '<div class="side-bar"><i></i></div>' +
+             '</div>';
+    }).join('');
+  }
+
+  function refreshSide(){
+    var el = $('sideList');
+    if(!el || !S) return;
+    var st = {};
+    MODULES.forEach(function(m){ st[m] = {n:0, done:0, right:0, wrong:0}; });
+    S.paper.forEach(function(it){
+      var b = st[it.q.module];
+      if(!b) return;
+      b.n++;
+      if(it.judged){ b.done++; if(it.ok) b.right++; else b.wrong++; }
+    });
+    var rows = el.children;
+    for(var i=0;i<rows.length;i++){
+      var b2 = st[rows[i].getAttribute('data-mod')];
+      if(!b2) continue;
+      var pctv = b2.n ? (b2.right / b2.n * 100) : 0;
+      var bar = rows[i].querySelector('.side-bar i');
+      bar.style.width = (pctv > 0 ? Math.max(3, pctv) : 0) + '%';
+      bar.className = pctv >= 80 ? '' : (pctv >= 60 ? 'mid' : 'low');
+      rows[i].querySelector('.side-num').textContent = b2.done + '/' + b2.n;
+    }
+    var done = 0, right = 0, wrong = 0;
+    S.paper.forEach(function(it){ if(it.judged){ done++; if(it.ok) right++; else wrong++; } });
+    var sp = $('sidePct');
+    if(sp){
+      sp.textContent = Math.round(done / TOTAL * 100) + '%';
+      $('sideDone').innerHTML = done + '<em> / ' + TOTAL + '</em>';
+      $('sideScore').innerHTML = fmtScore(right * PER_Q) + '<em> / ' + fmtScore(FULL) + '</em>';
+      $('sideRight').innerHTML = right + '<em> 题</em>';
+      $('sideWrong').innerHTML = wrong + '<em> 题</em>';
+    }
+  }
+
+  /* 手机端答题卡抽屉 */
+  function openRail(open){
+    if(open === undefined) open = !document.body.classList.contains('rail-open');
+    document.body.classList.toggle('rail-open', !!open);
+  }
+
+  function refreshRail(){
+    var cells = $('railGrid').children;
+    var mod = $('railModule').value;
+    for(var i=0;i<cells.length;i++){
+      var it = S.paper[i], c = cells[i];
+      c.className = 'cell';
+      var visible = !mod || it.q.module === mod;
+      c.style.display = visible ? '' : 'none';
+      if(it.judged) c.classList.add(it.ok ? 'right' : 'wrong');
+      if(i === S.pos) c.classList.add('cur');
+    }
+    var ans = S.paper.filter(function(it){ return it.judged; }).length;
+    $('railCount').textContent = '已答 ' + ans + ' / ' + TOTAL;
+  }
+
+  /* ================= 题目渲染 ================= */
+  function goto(i){
+    if(i<0 || i>=TOTAL) return;
+    if(advTimer){ clearTimeout(advTimer); advTimer = null; }
+    S.pos = i;
+    renderQuestion();
+    updateTop();
+  }
+
+  function renderQuestion(){
+    var it = S.paper[S.pos], q = it.q;
+    $('qNoText').innerHTML = (S.pos+1) + ' <em>/ ' + TOTAL + '</em>';
+    var tag = $('qTypeTag');
+    tag.textContent = TYPE_LABEL[q.type];
+    tag.className = 'tag ' + TYPE_CLASS[q.type];
+    $('qModTag').textContent = q.module;
+    $('qStem').textContent = q.stem;
+    $('qHint').textContent = it.judged
+      ? (it.ok ? '本题已答对' : '本题已答错')
+      : (q.type === 'multiple' ? '可多选，勾选后点击「提交作答」' : '点击选项后立即判分');
+
+    // 选项
+    var box = $('qOpts');
+    box.className = 'opts' + (it.judged ? ' locked' : '');
+    box.innerHTML = it.opts.map(function(o,k){
+      var cls = 'opt', mark = '';
+      var letter = (q.type === 'judge') ? o.id : (KEY_HINT[k] || String(k+1));
+      var isAns = it.correct.indexOf(letter) >= 0;
+      var picked = it.picked && it.picked.indexOf(letter) >= 0;
+      if(!it.judged){
+        if(picked) cls += ' picked';
+      } else {
+        if(isAns){ cls += ' right'; mark = '正确答案'; }
+        if(picked && !isAns){ cls += ' wrong'; mark = '你的作答'; }
+        else if(picked && isAns){ mark = '你的作答 · 正确'; }
+      }
+      var key = optKeyText(q, o, k);
+      var keyCls = (q.type === 'judge') ? 'opt-key txt' : 'opt-key';
+      var text = optBodyText(q, o);
+      return '<button class="' + cls + '" data-id="' + letter + '" data-k="' + k + '">' +
+             '<span class="' + keyCls + '">' + key + '</span>' +
+             '<span class="opt-text">' + esc(text) + '</span>' +
+             '<span class="opt-mark">' + mark + '</span></button>';
+    }).join('');
+    box.onclick = function(e){
+      var b = e.target.closest ? e.target.closest('.opt') : null;
+      if(!b || it.judged) return;
+      choose(b.getAttribute('data-id'), parseInt(b.getAttribute('data-k'),10));
+    };
+
+    // 反馈
+    renderFeedback(it);
+    renderFoot(it);
+    refreshRail();
+  }
+
+  function renderFoot(it){
+    $('btnCommit').classList.add('hide');
+    $('btnNextAfter').classList.add('hide');
+    $('btnNext').classList.remove('hide');
+    $('btnSkip').classList.remove('hide');
+    // 手机端只保留「提交作答」，翻页由底部操作条负责
+    var foot = document.querySelector('.qfoot');
+    if(foot) foot.classList.toggle('foot-mute', !(it.q.type === 'multiple' && !it.judged));
+    // 手机端底部条
+    var last = (S.pos === TOTAL - 1);
+    var mn = $('mNext');
+    if(mn){
+      mn.textContent = last ? '已是最后一题' : '下一题';
+      mn.disabled = last;
+    }
+    var mp = $('mPrev');
+    if(mp) mp.disabled = (S.pos === 0);
+    if(!it.judged && it.q.type === 'multiple'){
+      $('btnCommit').classList.remove('hide');
+      $('btnCommit').disabled = !it.picked || it.picked.length === 0;
+      $('btnCommit').textContent = (it.picked && it.picked.length) ? ('提交作答（已选 ' + it.picked.length + ' 项）') : '提交作答';
+    } else if(it.judged){
+      $('btnNextAfter').classList.remove('hide');
+      $('btnNextAfter').textContent = (S.pos === TOTAL-1) ? '已是最后一题' : '下一题';
+      $('btnNextAfter').disabled = (S.pos === TOTAL-1);
+      $('btnNext').classList.add('hide');
+      $('btnSkip').classList.add('hide');
+    }
+  }
+
+  function renderFeedback(it){
+    var box = $('qFb');
+    if(!it.judged){
+      var pending = (it.picked && it.picked.length)
+        ? '<div class="fb fb-info"><div class="fb-hd"><b>已选 ' + it.picked.length + ' 项</b><span class="pts">确认后提交判分</span></div>' +
+          '<div class="fb-bd"><div class="row"><span>当前选择</span><span class="ans-bad">' + esc(ansLabel(it.q, it.picked)) + '</span></div></div></div>'
+        : '';
+      box.innerHTML = pending;
+      return;
+    }
+    var right = ansLabel(it.q, it.correct);
+    var mine = (it.picked && it.picked.length) ? ansLabel(it.q, it.picked) : '未作答';
+    var head = it.ok
+      ? '<div class="fb fb-ok"><div class="fb-hd"><b>回答正确</b><span class="pts">+ ' + fmtScore(PER_Q) + ' 分</span></div>'
+      : '<div class="fb fb-bad"><div class="fb-hd"><b>回答错误</b><span class="pts">+ 0 分</span></div>';
+    box.innerHTML = head +
+      '<div class="fb-bd">' +
+        '<div class="row"><span>你的作答</span><span class="' + (it.ok ? 'ans-ok' : 'ans-bad') + '">' + esc(mine) + '</span></div>' +
+        '<div class="row"><span>正确答案</span><span class="ans-ok">' + esc(right) + '</span></div>' +
+        '<div class="exp"><span class="lb">解析</span>' + esc(it.explainText) + '</div>' +
+      '</div></div>';
+  }
+
+  /* ================= 作答与判分 ================= */
+  function isCorrect(it){
+    var a = it.correct.slice().sort().join(',');
+    var p = (it.picked || []).slice().sort().join(',');
+    return a === p && p !== '';
+  }
+
+  function choose(id, k){
+    var it = S.paper[S.pos];
+    if(it.judged) return;
+    if(it.q.type === 'multiple'){
+      var arr = it.picked || [];
+      var idx = arr.indexOf(id);
+      if(idx >= 0) arr.splice(idx,1); else arr.push(id);
+      it.picked = arr;
+      renderQuestion();
+      updateTop();
+      return;
+    }
+    it.picked = [id];
+    judge(false);
+  }
+
+  function commitMulti(){
+    var it = S.paper[S.pos];
+    if(it.judged || !it.picked || !it.picked.length) return;
+    judge(false);
+  }
+
+  function judge(silent){
+    var it = S.paper[S.pos];
+    if(it.judged) return;
+    it.judged = true;
+    it.ok = isCorrect(it);
+    renderQuestion();
+    updateTop();
+    // 答对：短暂确认后自动进入下一题
+    if(it.ok && S.pos < TOTAL-1){
+      if(advTimer) clearTimeout(advTimer);
+      advTimer = setTimeout(function(){ advTimer = null; if(S && !S.submitted) goto(S.pos+1); }, 900);
+    }
+  }
+
+  function nextQ(){ goto(Math.min(TOTAL-1, S.pos+1)); }
+  function prevQ(){ goto(Math.max(0, S.pos-1)); }
+
+  /* ================= 顶栏刷新 ================= */
+  function updateTop(){
+    var ans=0, right=0;
+    S.paper.forEach(function(it){ if(it.judged){ ans++; if(it.ok) right++; } });
+    var score = right * PER_Q;
+    var p = Math.round(ans/TOTAL*100);
+    $('bar').style.width = p + '%';
+    $('pctText').textContent = p + '%';
+    $('curNo').textContent = S.pos+1;
+    $('ansNo').textContent = ans;
+    $('mScore').innerHTML = fmtScore(score) + '<em>/' + fmtScore(FULL) + '</em>';
+    $('mRight').innerHTML = right + '<em> / ' + (ans-right) + '</em>';
+    $('railScore').innerHTML = fmtScore(score) + '<em> / ' + fmtScore(FULL) + '</em>';
+    $('mTime').textContent = fmtTime((S.endTs || Date.now()) - S.startTs);
+    refreshSide();
+  }
+
+  /* ================= 交卷 ================= */
+  function askSubmit(){
+    var ans=0, right=0;
+    S.paper.forEach(function(it){ if(it.judged){ ans++; if(it.ok) right++; } });
+    var skip = TOTAL - ans;
+    $('dlgBody').innerHTML =
+      '本次共 <span class="big">' + TOTAL + '</span> 题，已作答 <span class="big">' + ans + '</span> 题，' +
+      '其中答对 <span class="big">' + right + '</span> 题，答错 <span class="big">' + (ans-right) + '</span> 题，' +
+      '未作答 <span class="big">' + skip + '</span> 题。<br>' +
+      '未作答题目按未得分计。交卷后将公布全部题目的正确答案与个人作答，且无法继续答题。';
+    $('mask').classList.remove('hide');
+  }
+
+  function doSubmit(auto){
+    if(advTimer){ clearTimeout(advTimer); advTimer = null; }
+    S.submitted = true;
+    S.endTs = Date.now();
+    if(timerId){ clearInterval(timerId); timerId = null; }
+    window.onbeforeunload = null;
+    openRail(false);
+    $('mask').classList.add('hide');
+    buildReport();
+    $('screenExam').classList.add('hide');
+    $('topbar').classList.add('hide');
+    $('screenReport').classList.remove('hide');
+    window.scrollTo(0,0);
+  }
+
+  /* ================= 成绩报告 ================= */
+  var revState = {filter:'all', module:''};
+
+  function stats(){
+    var st = {right:0, wrong:0, skip:0, score:0, byType:{}, byMod:{}};
+    S.paper.forEach(function(it){
+      var q = it.q;
+      if(!st.byType[q.type]) st.byType[q.type] = {n:0,right:0,wrong:0,skip:0,score:0};
+      if(!st.byMod[q.module]) st.byMod[q.module] = {n:0,right:0,wrong:0,skip:0,score:0};
+      var bt = st.byType[q.type], bm = st.byMod[q.module];
+      bt.n++; bm.n++;
+      if(!it.judged){ st.skip++; bt.skip++; bm.skip++; }
+      else if(it.ok){ st.right++; st.score += PER_Q; bt.right++; bm.right++; bt.score += PER_Q; bm.score += PER_Q; }
+      else { st.wrong++; bt.wrong++; bm.wrong++; }
+    });
+    return st;
+  }
+
+  function buildReport(){
+    var st = stats();
+    var used = S.endTs - S.startTs;
+    $('repScore').textContent = fmtScore(st.score);
+    $('repMeta').innerHTML =
+      '交卷时间 ' + new Date(S.endTs).toLocaleString('zh-CN') +
+      ' · 共 ' + TOTAL + ' 题 · 满分 ' + fmtScore(FULL) + ' 分 · 考试模式 全题库抽卷（题目与选项均已随机打乱）';
+
+    var acc = pct(st.right, TOTAL);
+    var tiles = [
+      ['总分', fmtScore(st.score) + '<em> / ' + fmtScore(FULL) + '</em>'],
+      ['正确率', fmtPct(acc)],
+      ['答对', st.right + '<em> 题</em>'],
+      ['答错', st.wrong + '<em> 题</em>'],
+      ['未作答', st.skip + '<em> 题</em>'],
+      ['总用时', fmtTime(used)]
+    ];
+    $('repTiles').innerHTML = tiles.map(function(t){
+      return '<div><small>' + t[0] + '</small><b>' + t[1] + '</b></div>';
+    }).join('');
+
+    var tr = '<tr><th style="width:24%">题型</th><th>题数</th><th>答对</th><th>答错</th><th>未作答</th><th>得分</th><th>得分率</th></tr>';
+    ['single','multiple','judge'].forEach(function(t){
+      var b = st.byType[t]; if(!b) return;
+      tr += '<tr><td>' + TYPE_LABEL[t] + '</td><td class="num">' + b.n + '</td><td class="num">' + b.right +
+            '</td><td class="num">' + b.wrong + '</td><td class="num">' + b.skip + '</td><td class="num">' + fmtScore(b.score) +
+            '</td><td class="num">' + fmtPct(pct(b.score, b.n*PER_Q)) + '</td></tr>';
+    });
+    tr += '<tr><td><b>合计</b></td><td class="num"><b>' + TOTAL + '</b></td><td class="num"><b>' + st.right +
+          '</b></td><td class="num"><b>' + st.wrong + '</b></td><td class="num"><b>' + st.skip +
+          '</b></td><td class="num"><b>' + fmtScore(st.score) + '</b></td><td class="num"><b>' + fmtPct(acc) + '</b></td></tr>';
+    $('repTblTypes').innerHTML = tr;
+
+    var mr = '<tr><th style="width:46%">知识模块</th><th>题数</th><th>答对</th><th>正确率</th><th style="width:22%">分布</th></tr>';
+    MODULES.forEach(function(m){
+      var b = st.byMod[m]; if(!b) return;
+      var a = pct(b.right, b.n);
+      var cls = a >= 80 ? '' : (a >= 60 ? 'mid' : 'low');
+      mr += '<tr><td>' + esc(m) + '</td><td class="num">' + b.n + '</td><td class="num">' + b.right +
+            '</td><td class="num">' + fmtPct(a) + '</td>' +
+            '<td><div class="bar-out" title="' + fmtPct(a) + '"><i class="' + cls + '" style="width:' + Math.max(2,a) + '%"></i></div></td></tr>';
+    });
+    $('repTblModules').innerHTML = mr;
+
+    renderReview();
+  }
+
+  function renderReview(){
+    var html = '';
+    S.paper.forEach(function(it,i){
+      var q = it.q;
+      var state = !it.judged ? 'skip' : (it.ok ? 'ok' : 'wrong');
+      if(revState.filter !== 'all' && revState.filter !== state) return;
+      if(revState.module && q.module !== revState.module) return;
+      var vtext = state === 'ok' ? '回答正确' : (state === 'wrong' ? '回答错误' : '未作答');
+      var markMap = {};
+      it.correct.forEach(function(x){ markMap[x] = 'right'; });
+      (it.picked || []).forEach(function(x){ if(markMap[x] !== 'right') markMap[x] = 'wrong'; });
+
+      var opts = it.opts.map(function(o,k){
+        var cls = 'rev-opt';
+        var mk = '';
+        var letter = (q.type === 'judge') ? o.id : (KEY_HINT[k] || String(k+1));
+        var picked = it.picked && it.picked.indexOf(letter) >= 0;
+        if(markMap[letter] === 'right'){ cls += ' right'; mk = picked ? '正确答案 · 你的作答' : '正确答案'; }
+        else if(markMap[letter] === 'wrong'){ cls += ' wrong'; mk = '你的作答'; }
+        var key = optKeyText(q, o, k);
+        var keyCls = (q.type === 'judge') ? 'k txt' : 'k';
+        var text = optBodyText(q, o);
+        return '<div class="' + cls + '"><span class="' + keyCls + '">' + key + '</span><span>' + esc(text) + '</span><span class="mk">' + mk + '</span></div>';
+      }).join('');
+
+      var mine = (it.picked && it.picked.length) ? ansLabel(q, it.picked) : '未作答';
+      html += '<div class="rev">' +
+        '<div class="rev-hd">' +
+          '<span class="rev-no">第 ' + (i+1) + ' 题</span>' +
+          '<span class="tag ' + TYPE_CLASS[q.type] + '">' + TYPE_LABEL[q.type] + '</span>' +
+          '<span class="tag tag-mod">' + esc(q.module) + '</span>' +
+          '<span class="verdict ' + state + '">' + vtext + '（' + (it.ok ? '+' + fmtScore(PER_Q) : '+0') + ' 分）</span>' +
+        '</div>' +
+        '<p class="rev-stem">' + esc(q.stem) + '</p>' +
+        '<div class="rev-opts">' + opts + '</div>' +
+        '<div class="rev-exp"><span class="lb">解析</span>正确答案：<b>' + esc(ansLabel(q, it.correct)) +
+          '</b> ｜ 你的作答：<b>' + esc(mine) + '</b><br>' + esc(it.explainText) + '</div>' +
+      '</div>';
+    });
+    if(!html) html = '<div class="empty">当前筛选条件下没有题目。</div>';
+    $('revList').innerHTML = html;
+  }
+
+  /* ================= 事件绑定 ================= */
+  $('btnStart').onclick = startExam;
+  $('btnPrev').onclick = prevQ;
+  $('btnNext').onclick = nextQ;
+  $('btnSkip').onclick = nextQ;
+  $('btnCommit').onclick = commitMulti;
+  $('btnNextAfter').onclick = nextQ;
+  $('btnSubmitTop').onclick = askSubmit;
+  $('btnSubmitRail').onclick = askSubmit;
+  $('dlgCancel').onclick = function(){ $('mask').classList.add('hide'); };
+  $('dlgOk').onclick = function(){ doSubmit(false); };
+  $('railModule').onchange = refreshRail;
+  $('mPrev').onclick = prevQ;
+  $('mNext').onclick = nextQ;
+  $('mRail').onclick = function(){ openRail(); };
+  $('railClose').onclick = function(){ openRail(false); };
+  $('railMask').onclick = function(){ openRail(false); };
+
+  $('revFilter').onclick = function(e){
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if(!b) return;
+    Array.prototype.forEach.call(this.children, function(c){ c.classList.remove('on'); });
+    b.classList.add('on');
+    revState.filter = b.getAttribute('data-f');
+    renderReview();
+  };
+  $('revModule').onchange = function(){ revState.module = this.value; renderReview(); };
+  $('btnPrint').onclick = function(){ window.print(); };
+  $('btnRestart').onclick = function(){
+    revState = {filter:'all', module:''};
+    Array.prototype.forEach.call($('revFilter').children, function(c,i){ c.classList.toggle('on', i===0); });
+    $('revModule').value = '';
+    $('screenReport').classList.add('hide');
+    $('screenStart').classList.remove('hide');
+    window.scrollTo(0,0);
+  };
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){ openRail(false); return; }
+    if(!S || S.submitted) return;
+    if($('screenExam').classList.contains('hide')) return;
+    if(!$('mask').classList.contains('hide')) return;
+    var it = S.paper[S.pos], k = e.key;
+    var idx = KEY_HINT.indexOf((k||'').toUpperCase());
+    if(idx < 0 && /^[1-4]$/.test(k)) idx = parseInt(k,10)-1;
+    if(idx >= 0){
+      if(!it.judged && idx < it.opts.length){ choose(it.opts[idx].id, idx); e.preventDefault(); }
+      return;
+    }
+    if(k === 'Enter'){
+      if(it.judged) nextQ();
+      else if(it.q.type === 'multiple') commitMulti();
+      e.preventDefault();
+      return;
+    }
+    if(k === 'ArrowRight'){ nextQ(); e.preventDefault(); }
+    if(k === 'ArrowLeft'){ prevQ(); e.preventDefault(); }
+  });
+
+  /* ================= 自检模式（?selftest=1） ================= */
+  function selftest(){
+    startExam();
+    S.paper.forEach(function(it){
+      if(Math.random() < 0.8){ it.picked = it.correct.slice(); }   // 按正确答案作答
+      else {
+        var letters = it.opts.map(function(o,k){ return (it.q.type === 'judge') ? o.id : (KEY_HINT[k] || String(k+1)); });
+        var wrong = letters.filter(function(x){ return it.correct.indexOf(x) < 0; });
+        it.picked = (it.q.type === 'multiple') ? wrong.slice(0,1) : [wrong[0]];
+      }
+      it.judged = true;
+      it.ok = isCorrect(it);
+    });
+    doSubmit(true);
+    return {total:TOTAL, right:stats().right, score:stats().score};
+  }
+
+  /* ================= 初始化 ================= */
+  buildOverview();
+  if(location.search.indexOf('selftest=1') >= 0){
+    var r = selftest();
+    console.log('[selftest]', JSON.stringify(r));
+  }
+})();
+</script>
+</body>
+</html>
